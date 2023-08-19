@@ -4,10 +4,6 @@
     "module": "esnext",
     "moduleResolution": "Node",
     "target": "ES2022",
-    "outDir": "dist/",
     "strict": true
-  },
-  "include": [
-    "packages/schools/src"
-  ]
+  }
 }

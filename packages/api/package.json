@@ -4,7 +4,7 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "del-cli dist/ && tsc",
-    "start": "node ../..",
+    "start": "node .",
     "start:ts-node": "node --loader ts-node/esm src/index.ts"
   },
   "dependencies": {

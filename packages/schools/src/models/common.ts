@@ -19,6 +19,7 @@ export const RspoId = Type.Integer({
 
 export const Slug = (options: StringOptions = {}) => Type.String({
     pattern: '^[a-z0-9-]+$',
+    ...options,
 });
 
 export const VersionId = Type.String({
