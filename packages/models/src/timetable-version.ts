@@ -1,5 +1,5 @@
 import {Type} from "@sinclair/typebox";
-import {Id, Nullable} from "@timetable-api/models";
+import {Id, Nullable} from "./common.js";
 
 const TimetableVersionCommon = Type.Object({
     weekdays: Type.Array(Type.Object({

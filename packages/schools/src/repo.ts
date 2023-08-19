@@ -2,10 +2,10 @@ import fse from "fs-extra";
 import path from "path";
 import util from "util";
 import childProcess from "child_process";
-import {isDefined} from "../utils/index.js";
 import Ajv from 'ajv';
-import {SchoolConfig} from "../models/config/school.js";
-import {TerritoriesConfig} from "../models/config/territories.js";
+import {TerritoriesConfig} from "./config-models/territories.js";
+import {SchoolConfig} from "./config-models/school.js";
+import {isDefined} from "./utils.js";
 
 const exec = util.promisify(childProcess.exec);
 
@@ -73,6 +73,7 @@ export interface TerritoriesResolvedConfig {
 }
 
 export async function loadTerritoriesConfig(): Promise<TerritoriesResolvedConfig> {
+    console.log("Loading territories.json...");
     const configPath = path.join(repoLocation, "territories.json");
     const json = await fse.readJson(configPath);
     if (!validateTerritories(json)) {

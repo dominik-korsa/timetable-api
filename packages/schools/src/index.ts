@@ -1,4 +1,4 @@
-import {updateSchoolCache} from "./school-manager/index.js";
+import {updateSchoolCache} from "./school-manager.js";
 import {redisClient} from "./redis.js";
 
 async function main() {
