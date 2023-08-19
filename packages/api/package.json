@@ -1,0 +1,20 @@
+{
+  "name": "timetable-api-api",
+  "private": true,
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "del-cli dist/ && tsc",
+    "start": "node ../..",
+    "start:ts-node": "node --loader ts-node/esm src/index.ts"
+  },
+  "dependencies": {
+    "@fastify/swagger": "^8.8.0",
+    "@fastify/swagger-ui": "^1.9.3",
+    "@fastify/type-provider-typebox": "^3.5.0",
+    "fastify": "^4.21.0"
+  },
+  "devDependencies": {
+    "del-cli": "^5.0.0"
+  },
+  "type": "module"
+}

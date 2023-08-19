@@ -1,3 +1,4 @@
-.idea
-.vscode
-.iml
+**/.idea
+**/.vscode
+**/*.iml
+**/node_modules

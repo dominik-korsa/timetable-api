@@ -1,11 +1,11 @@
 import {TypeBoxTypeProvider} from "@fastify/type-provider-typebox";
 import Fastify from 'fastify';
 import {Type} from "@sinclair/typebox";
-import {School} from "../models/school.js";
+import {School} from "../../schools/src/models/school.js";
 import FastifySwagger from '@fastify/swagger';
 import FastifySwaggerUi from '@fastify/swagger-ui';
-import {ApiOptions} from "./options.js";
-import {RspoId} from "../models/common.js";
+import {ApiOptions} from "../options.js";
+import {RspoId} from "../../schools/src/models/common.js";
 
 const fastify = Fastify({
     logger: true
