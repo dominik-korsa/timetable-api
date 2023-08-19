@@ -4,7 +4,7 @@ import {Type} from "@sinclair/typebox";
 import FastifySwagger from '@fastify/swagger';
 import FastifySwaggerUi from '@fastify/swagger-ui';
 import {RspoId, School} from "@timetable-api/common";
-import {getSchoolById, redisClient} from "./redis.js";
+import {getSchoolById, getSchoolBySpecifier, redisClient} from "./redis.js";
 
 const fastify = Fastify({
     logger: true
@@ -31,17 +31,20 @@ export async function startServer() {
         return school;
     });
 
-    // fastify.get('/school/slug/city/:cityId/:schoolId', {
-    //         schema: {
-    //             params: Type.Object({
-    //                 citySlug: Slug(),
-    //                 schoolSlug: Slug(),
-    //             }),
-    //             response: {
-    //                 200: School,
-    //             }
-    //         }
-    //     },
+    fastify.get('/school/specifier/:specifier', {
+        schema: {
+            params: Type.Object({
+                specifier: Type.String(),
+            }),
+            response: {
+                200: School,
+            }
+        }
+    }, async (req, reply) => {
+        const school = await getSchoolBySpecifier(req.params.specifier);
+        if (school === undefined) return reply.status(404).send();
+        return school;
+    });
 
     await fastify.ready();
     fastify.swagger();
