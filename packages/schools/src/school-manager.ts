@@ -1,4 +1,4 @@
-import {School, SchoolSpecifier, SpecifierMinimum} from "@timetable-api/models";
+import {School, SchoolSpecifier, SpecifierMinimum} from "@timetable-api/common";
 import {RspoClient} from "./rspo/index.js";
 import {RspoSchoolResponse} from "./rspo/types.js";
 import {redisClient} from "./redis.js";

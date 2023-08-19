@@ -1,5 +1,5 @@
 {
-  "name": "timetable-api-api",
+  "name": "@timetable-api/api",
   "private": true,
   "main": "dist/index.js",
   "scripts": {
