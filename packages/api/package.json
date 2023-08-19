@@ -8,6 +8,7 @@
     "start:ts-node": "node --loader ts-node/esm src/index.ts"
   },
   "dependencies": {
+    "@fastify/etag": "^4.2.0",
     "@fastify/swagger": "^8.8.0",
     "@fastify/swagger-ui": "^1.9.3",
     "@fastify/type-provider-typebox": "^3.5.0",

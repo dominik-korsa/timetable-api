@@ -3,6 +3,7 @@ import Fastify from 'fastify';
 import {Type} from "@sinclair/typebox";
 import FastifySwagger from '@fastify/swagger';
 import FastifySwaggerUi from '@fastify/swagger-ui';
+import FastifyEtag from '@fastify/etag';
 import {RspoId, School} from "@timetable-api/common";
 import {getSchoolById, getSchoolBySpecifier, redisClient} from "./redis.js";
 
@@ -15,6 +16,7 @@ export async function startServer() {
     await fastify.register(FastifySwaggerUi, {
         prefix: '/docs'
     });
+    await fastify.register(FastifyEtag);
 
     fastify.get('/school/rspo/:rspoId', {
         schema: {

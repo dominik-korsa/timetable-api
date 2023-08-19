@@ -26,6 +26,9 @@ importers:
 
   packages/api:
     dependencies:
+      '@fastify/etag':
+        specifier: ^4.2.0
+        version: 4.2.0
       '@fastify/swagger':
         specifier: ^8.8.0
         version: 8.8.0
@@ -122,6 +125,12 @@ packages:
 
   /@fastify/error@3.3.0:
     resolution: {integrity: sha512-dj7vjIn1Ar8sVXj2yAXiMNCJDmS9MQ9XMlIecX2dIzzhjSHCyKo4DdXjXMs7wKW2kj6yvVRSpuQjOZ3YLrh56w==}
+    dev: false
+
+  /@fastify/etag@4.2.0:
+    resolution: {integrity: sha512-stvRYricpLAAcDsLFi6gUvFtU8sK+EnygajcgAVhvjw4MabTINNIuh35wu3r4x5JmfD1unh4YCQAFPK2H9vuVQ==}
+    dependencies:
+      fastify-plugin: 4.5.1
     dev: false
 
   /@fastify/fast-json-stringify-compiler@4.3.0:
