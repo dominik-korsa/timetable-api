@@ -13,8 +13,5 @@
     "@fastify/type-provider-typebox": "^3.5.0",
     "fastify": "^4.21.0"
   },
-  "devDependencies": {
-    "del-cli": "^5.0.0"
-  },
   "type": "module"
 }

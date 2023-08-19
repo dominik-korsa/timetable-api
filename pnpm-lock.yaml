@@ -14,6 +14,9 @@ importers:
       '@tsconfig/recommended':
         specifier: ^1.0.2
         version: 1.0.2
+      del-cli:
+        specifier: ^5.0.0
+        version: 5.0.0
       ts-node:
         specifier: ^10.9.1
         version: 10.9.1(@types/node@20.5.1)(typescript@5.1.6)
@@ -35,13 +38,14 @@ importers:
       fastify:
         specifier: ^4.21.0
         version: 4.21.0
-    devDependencies:
-      del-cli:
-        specifier: ^5.0.0
-        version: 5.0.0
+
+  packages/models: {}
 
   packages/schools:
     dependencies:
+      '@timetable-api/models':
+        specifier: workspace:*
+        version: link:../models
       ajv:
         specifier: ^8.12.0
         version: 8.12.0
@@ -58,9 +62,6 @@ importers:
       '@types/fs-extra':
         specifier: ^11.0.1
         version: 11.0.1
-      del-cli:
-        specifier: ^5.0.0
-        version: 5.0.0
 
 packages:
 

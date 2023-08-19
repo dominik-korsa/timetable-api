@@ -1,5 +1,5 @@
 import {Static, Type} from "@sinclair/typebox";
-import {NanoId, RspoId, Slug} from "./common.js";
+import {RspoId, Slug} from "./common.js";
 
 export const SpecifierMinimum = Type.Union([
     Type.Literal('commune'),

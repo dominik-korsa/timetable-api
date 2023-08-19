@@ -1,5 +1,5 @@
-import {ReasonableUrl, RspoId, Slug, VersionId} from "../common.js";
 import {Static, Type} from "@sinclair/typebox";
+import {ReasonableUrl, RspoId, Slug, VersionId} from "@timetable-api/models";
 
 export const SchoolConfigVersionOptivum = Type.Object({
     type: Type.Literal('optivum'),

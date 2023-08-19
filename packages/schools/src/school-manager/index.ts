@@ -1,5 +1,5 @@
 import {loadSchoolConfigs, loadTerritoriesConfig, TerritoriesResolvedConfig, updateRepo} from "../repo/index.js";
-import {School, SchoolSpecifier, SpecifierMinimum} from "../models/school.js";
+import {School, SchoolSpecifier, SpecifierMinimum} from "@timetable-api/models";
 import {RspoClient} from "../rspo/index.js";
 import {RspoSchoolResponse} from "../rspo/types.js";
 import {slugify} from "../utils/index.js";
