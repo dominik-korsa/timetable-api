@@ -4,8 +4,11 @@ import {Type} from "@sinclair/typebox";
 import FastifySwagger from '@fastify/swagger';
 import FastifySwaggerUi from '@fastify/swagger-ui';
 import FastifyEtag from '@fastify/etag';
-import {RspoId, School} from "@timetable-api/common";
+import {buildRedisStorage, RspoId, School} from "@timetable-api/common";
 import {getSchoolById, getSchoolBySpecifier, redisClient} from "./redis.js";
+import { OptivumParser } from "@timetable-api/optivum-scrapper";
+import {setupCache} from "axios-cache-interceptor";
+import Axios from "axios";
 
 const fastify = Fastify({
     logger: true
@@ -58,7 +61,13 @@ export async function startServer() {
 }
 
 async function start() {
+    const axios = setupCache(Axios, {
+        storage: buildRedisStorage(redisClient),
+    });
+
     await redisClient.connect();
+    const parser = new OptivumParser("http://plan.technikum19.edu.pl/", axios);
+    console.log(JSON.stringify(await parser.parse(), null, 2));
     await startServer();
 }
 

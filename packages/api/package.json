@@ -13,8 +13,8 @@
     "@fastify/swagger-ui": "^1.9.3",
     "@fastify/type-provider-typebox": "^3.5.0",
     "@timetable-api/common": "workspace:*",
-    "fastify": "^4.21.0",
-    "redis": "^4.6.7"
+    "@timetable-api/optivum-scrapper": "workspace:*",
+    "fastify": "^4.21.0"
   },
   "type": "module"
 }
