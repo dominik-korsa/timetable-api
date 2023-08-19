@@ -1,8 +1,9 @@
-import {SchoolManager} from "./school-manager/index.js";
+import {updateSchoolCache} from "./school-manager/index.js";
+import {redisClient} from "./redis.js";
 
 async function main() {
-    const schoolManager = new SchoolManager();
-    await schoolManager.load();
+    await redisClient.connect();
+    await updateSchoolCache();
 }
 
 main()
