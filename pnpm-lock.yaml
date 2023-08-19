@@ -35,9 +35,15 @@ importers:
       '@fastify/type-provider-typebox':
         specifier: ^3.5.0
         version: 3.5.0(@sinclair/typebox@0.31.1)
+      '@timetable-api/common':
+        specifier: workspace:*
+        version: link:../common
       fastify:
         specifier: ^4.21.0
         version: 4.21.0
+      redis:
+        specifier: ^4.6.7
+        version: 4.6.7
 
   packages/common: {}
 

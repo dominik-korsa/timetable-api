@@ -6,8 +6,5 @@
   "type": "module",
   "scripts": {
     "build": "del-cli dist/ && tsc"
-  },
-  "dependencies": {
-
   }
 }

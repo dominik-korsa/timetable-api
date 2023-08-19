@@ -1,17 +1,16 @@
 import {TypeBoxTypeProvider} from "@fastify/type-provider-typebox";
 import Fastify from 'fastify';
 import {Type} from "@sinclair/typebox";
-import {School} from "../../models/src/school.js";
 import FastifySwagger from '@fastify/swagger';
 import FastifySwaggerUi from '@fastify/swagger-ui';
-import {ApiOptions} from "../options.js";
-import {RspoId} from "../../models/src/common.js";
+import {RspoId, School} from "@timetable-api/common";
+import {getSchoolById, redisClient} from "./redis.js";
 
 const fastify = Fastify({
     logger: true
 }).withTypeProvider<TypeBoxTypeProvider>();
 
-export async function startServer({ schoolManager }: ApiOptions) {
+export async function startServer() {
     await fastify.register(FastifySwagger);
     await fastify.register(FastifySwaggerUi, {
         prefix: '/docs'
@@ -27,7 +26,7 @@ export async function startServer({ schoolManager }: ApiOptions) {
             }
         }
     }, async (req, reply) => {
-        const school = schoolManager.getSchoolByRspoId(req.params.rspoId);
+        const school = await getSchoolById(req.params.rspoId);
         if (school === undefined) return reply.status(404).send();
         return school;
     });
@@ -52,3 +51,13 @@ export async function startServer({ schoolManager }: ApiOptions) {
         host: '0.0.0.0',
     });
 }
+
+async function start() {
+    await redisClient.connect();
+    await startServer();
+}
+
+start().catch((error) => {
+    console.error(error);
+    process.exit(1);
+});
