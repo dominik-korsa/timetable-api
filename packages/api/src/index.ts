@@ -5,7 +5,7 @@ import FastifySwagger from '@fastify/swagger';
 import FastifySwaggerUi from '@fastify/swagger-ui';
 import FastifyEtag from '@fastify/etag';
 import {buildRedisStorage, RspoId, School} from "@timetable-api/common";
-import {getSchoolById, getSchoolBySpecifier, redisClient} from "./redis.js";
+import {getSchoolById, getSchoolBySpecifier, redisClient, setVersion} from "./redis.js";
 import { OptivumParser } from "@timetable-api/optivum-scrapper";
 import {setupCache} from "axios-cache-interceptor";
 import Axios from "axios";
@@ -67,7 +67,16 @@ async function start() {
 
     await redisClient.connect();
     const parser = new OptivumParser("http://plan.technikum19.edu.pl/", axios);
-    console.log(JSON.stringify(await parser.parse(), null, 2));
+    const parsed = await parser.parse();
+
+    await setVersion('lorem', '2137', {
+        data: parsed.data,
+        lastCheck: '',
+        lastCheckFailed: false,
+        nextCheck: '',
+    })
+
+    console.log(JSON.stringify(parsed, null, 2));
     await startServer();
 }
 

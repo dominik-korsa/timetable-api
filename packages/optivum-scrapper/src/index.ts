@@ -1,8 +1,15 @@
 import {Axios} from 'axios';
 import {TimetableList} from "@wulkanowy/timetable-parser";
 import {AxiosCacheInstance} from "axios-cache-interceptor";
-import {TimetableTimeSlot, TimetableVersionData} from '@timetable-api/common';
+import {slugify, TimetableTimeSlot, TimetableVersionData, TimetableWeekday} from '@timetable-api/common';
 import {JSDOM} from 'jsdom';
+import { createHash } from 'node:crypto';
+
+function calculateHash(document: string): string {
+    const hash = createHash('sha256');
+    hash.update(document);
+    return hash.digest('base64');
+}
 
 interface ListResponse {
     classIds: string[];
@@ -10,19 +17,32 @@ interface ListResponse {
     roomIds: string[];
 }
 
+interface ParsedTable {
+    timeSlotCount: number,
+    getTimeSlots: () => TimetableTimeSlot[],
+    getWeekdays: () => TimetableWeekday[],
+}
+
 export class OptivumParser {
     private readonly baseUrl: string;
     private readonly axios: Axios | AxiosCacheInstance;
 
-    private async getDocument(path: string): Promise<string> {
-        const response = await this.axios.get(new URL(path, this.baseUrl).toString(), {
+    private async getDocument(path: string): Promise<{
+        response: string,
+        url: string,
+    }> {
+        const url = new URL(path, this.baseUrl).toString();
+        const response = await this.axios.get(url, {
             responseType: 'document',
             headers: {
                 "User-Agent": 'Timetable-Api'
             },
             cache: false
         });
-        return response.data as string;
+        return {
+            response: response.data as string,
+            url,
+        };
     }
 
     constructor(baseUrl: string, axios: Axios | AxiosCacheInstance) {
@@ -32,7 +52,7 @@ export class OptivumParser {
 
     private async parseList(path: string): Promise<ListResponse | null> {
         try {
-            const response = await this.getDocument(path);
+            const { response } = await this.getDocument(path);
             const list = new TimetableList(response).getList();
             return {
                 classIds: list.classes.map((item) => item.value),
@@ -50,21 +70,25 @@ export class OptivumParser {
         return hours * 60 + minutes;
     }
 
-    private async parseTable(id: string): Promise<{
-        timeSlots: TimetableTimeSlot[],
-    }> {
-        const response = await this.getDocument(`plany/${id}.html`);
-        // const table = new Table(response);
-        // table.getDays();
-        // table.getTitle();
-        // table.getDays();
-        // table.getHours();
+    static readonly weekdayNames: Record<string, TimetableWeekday> = {
+        poniedzialek: {name: 'poniedziałek', isoNumber: 1},
+        wtorek: {name: 'wtorek', isoNumber: 2},
+        sroda: {name: 'środa', isoNumber: 3},
+        czwartek: {name: 'czwartek', isoNumber: 4},
+        piatek: {name: 'piątek', isoNumber: 5},
+        sobota: {name: 'sobota', isoNumber: 6},
+        niedziela: {name: 'niedziela', isoNumber: 7},
+    };
+
+    private async parseTable(id: string): Promise<ParsedTable> {
+        const { response } = await this.getDocument(`plany/${id}.html`);
         const document = new JSDOM(response).window.document;
         const mainTable = document.querySelector('table.tabela > tbody');
         if (!mainTable) throw new Error(`Element table.tabela not found in plany/${id}.html`)
         const rows = mainTable.querySelectorAll('tr:not(:first-of-type)');
         return {
-            timeSlots: [...rows].map((row, index) => {
+            timeSlotCount: rows.length,
+            getTimeSlots: () => [...rows].map((row, index) => {
                 const timeSpan = row.querySelector('td.g')?.textContent;
                 if (!timeSpan) throw new Error(`Cannot find time range for lesson in plany/${id}.html`);
                 const [beginMinute, endMinute] = timeSpan.split('-')
@@ -75,40 +99,53 @@ export class OptivumParser {
                     endMinute,
                 });
             }),
+            getWeekdays: () => {
+                const headers = [...mainTable.querySelectorAll('tr:first-of-type > th:nth-child(n+3)')];
+                return headers.map((item) => {
+                    const weekdayName = item.textContent?.trim() ?? '-';
+                    return OptivumParser.weekdayNames[slugify(weekdayName)] ?? {
+                        name: weekdayName,
+                        isoNumber: null,
+                    };
+                });
+            }
         }
     }
 
-    async parse(): Promise<TimetableVersionData> {
+    async parse(): Promise<{
+        data: TimetableVersionData,
+    }> {
         const start = Date.now();
         const items = await this.parseList('lista.html');
         if (!items) throw new Error('Failed to load lista.html');
 
-        let timeSlotsLongest: TimetableTimeSlot[] = [];
-
-        await Promise.all([
-            ...items.classIds.map(async (item) => {
-                const parsed = await this.parseTable(`o${item}`)
-                if (parsed.timeSlots.length > timeSlotsLongest.length) timeSlotsLongest = parsed.timeSlots;
-            }),
-            ...items.teacherIds.map(async (item) => {
-                const parsed = await this.parseTable(`n${item}`);
-                if (parsed.timeSlots.length > timeSlotsLongest.length) timeSlotsLongest = parsed.timeSlots;
-            }),
-            ...items.roomIds.map(async (item) => {
-                const parsed = await this.parseTable(`s${item}`);
-                if (parsed.timeSlots.length > timeSlotsLongest.length) timeSlotsLongest = parsed.timeSlots;
-            }),
+        const [
+            classTables,
+            teacherTables,
+            roomTables
+        ] = await Promise.all([
+            Promise.all(items.classIds.map((item) => this.parseTable(`o${item}`))),
+            Promise.all(items.teacherIds.map((item) => this.parseTable(`n${item}`))),
+            Promise.all(items.roomIds.map((item) => this.parseTable(`s${item}`))),
         ]);
+        const tables = [...classTables, ...teacherTables, ...roomTables];
+
+        let timeSlotsLongest: TimetableTimeSlot[] = [];
+        tables.forEach((table) => {
+           if (table.timeSlotCount > timeSlotsLongest.length) timeSlotsLongest = table.getTimeSlots();
+        });
 
         try {
             return {
-                common: {
-                    classes: [],
-                    rooms: [],
-                    teachers: [],
-                    timeSlots: timeSlotsLongest,
-                    weekdays: [],
-                }
+                data: {
+                    common: {
+                        classes: [],
+                        rooms: [],
+                        teachers: [],
+                        timeSlots: timeSlotsLongest,
+                        weekdays: tables[0].getWeekdays(),
+                    }
+                },
             }
         } finally {
             console.log(`Done in ${Date.now() - start}ms`);

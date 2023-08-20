@@ -6,8 +6,6 @@ export interface TimetableVersionData {
 
 export interface TimetableVersionRedis {
     data: TimetableVersionData,
-    verifierUrl: string,
-    verifierHash: string,
     nextCheck: string,
     lastCheck: string,
     lastCheckFailed: boolean,

@@ -1,5 +1,5 @@
 import { createClient } from 'redis';
-import { School } from '@timetable-api/common';
+import {School, TimetableVersionRedis} from '@timetable-api/common';
 
 export const redisClient = createClient();
 
@@ -15,4 +15,8 @@ export async function getSchoolBySpecifier(specifier: string): Promise<School | 
     const rspoId = await redisClient.hGet('school-specifiers', specifier);
     if (!rspoId) return undefined;
     return getSchoolById(rspoId);
+}
+
+export async function setVersion(rspoId: string, versionId: string, data: TimetableVersionRedis) {
+    await redisClient.json.set(`timetable-versions:${rspoId}:${versionId}`, '$', data as any);
 }
