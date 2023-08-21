@@ -6,7 +6,7 @@ from logging import getLogger, basicConfig, DEBUG
 
 basicConfig(level=DEBUG)
 
-KEYWORDS: list[str] = [
+KEYWORDS = {
     "plan",
     "plany",
     "harmonogram",
@@ -21,7 +21,7 @@ KEYWORDS: list[str] = [
     "podziały godzin",
     "rozkład",
     "rozkłady",
-]
+}
 RSPO_API_BASE_URL: str = "https://api-rspo.mein.gov.pl/api"
 
 
