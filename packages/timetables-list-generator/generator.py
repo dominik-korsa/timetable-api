@@ -3,6 +3,7 @@ from urllib.parse import urljoin, urlparse
 from aiohttp import ClientSession
 from bs4 import BeautifulSoup
 from logging import getLogger, basicConfig, DEBUG
+from queue import SimpleQueue
 
 basicConfig(level=DEBUG)
 
@@ -83,38 +84,35 @@ class TimetablesListGenerator:
             return url._replace(scheme="http").geturl().replace(":///", "://")
         return url._replace(scheme="https").geturl().replace(":///", "://")
 
-    async def find_timetables_on_website(self, url: str) -> list[str]:
-        timetables: list[str] = []
+    async def find_timetables_on_website(self, url: str) -> set[str]:
+        timetables = set[str]()
         request_count: int = 1
-        links = set(
-            urljoin(url, link).rstrip("/")
-            for link in self.find_links_on_page(await self._request(url))
-        )
+        queue = SimpleQueue()
+        for link in self.find_links_on_page(await self._request(url)):
+            queue.put(urljoin(url, link).rstrip("/"))
         checked_links = set[str]()
-        for link in links:
+        while not queue.empty():
+            if request_count >= 30:
+                break
+            request_count += 1
+
+            link = queue.get_nowait()
             if link in checked_links:
                 continue
-            if request_count >= 30:
-                return []
-            html, response_url = await self._request(link, return_response_url=True)
-            request_count += 1
+            checked_links.add(link)
+
+            try:
+                html, response_url = await self._request(link, return_response_url=True)
+            except FailedRequestException:
+                continue
+
             if self.check_timetable(html):
-                timetables.append(str(response_url))
-                checked_links += [link, str(response_url)]
+                timetables.add(str(response_url))
+                checked_links.add(str(response_url))
                 continue
             for l in self.find_links_on_page(html):
-                links.add(l)
-            checked_links.add(link)
-        for link in links:
-            if link in checked_links:
-                continue
-            if request_count >= 30:
-                return []
-            html, response_url = await self._request(link, return_response_url=True)
-            if self.check_timetable(html):
-                timetables.append(str(response_url))
-            request_count += 1
-        return list(dict.fromkeys(timetables))
+                queue.put(l)
+        return timetables
 
     async def _request(
         self, url: str, method: str = "GET", return_response_url: bool = False, **kwargs
@@ -197,10 +195,7 @@ class TimetablesListGenerator:
                         )
                     )
                     continue
-                try:
-                    timetables: list[str] = await self.find_timetables_on_website(url)
-                except:
-                    timetables: list[str] = []
+                timetables = list(await self.find_timetables_on_website(url))
                 self._logger.info(
                     "{:<4} {:<7} {:<40} {:<40} {:<6} {:<80}".format(
                         page,
@@ -212,8 +207,11 @@ class TimetablesListGenerator:
                     )
                 )
                 if timetables:
-                    with open(file, "r") as data:
-                        data_json = json.loads(data.read())
+                    try:
+                        with open(file, "r") as data:
+                            data_json = json.loads(data.read())
+                    except FileNotFoundError:
+                        data_json = []
                     with open(file, "w") as data:
                         data_json.append(
                             {
