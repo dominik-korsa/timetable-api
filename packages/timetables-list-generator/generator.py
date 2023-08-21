@@ -33,29 +33,26 @@ class TimetablesListGenerator:
     def __init__(self) -> None:
         self._logger = getLogger("timetables-list-generator")
 
-    def find_links_on_page(self, html: str) -> list[str]:
+    def find_links_on_page(self, html: str) -> set[str]:
         soup: BeautifulSoup = BeautifulSoup(html, "html.parser")
-        links: list[str] = []
+        links = set[str]()
         for link in soup.select("a"):
             if not link.has_attr("href"):
                 continue
             for keyword in KEYWORDS:
                 if keyword in link.text.lower():
-                    links.append(link["href"])
+                    links.add(link["href"])
                     break
-        return list(dict.fromkeys(links))
+        return links
 
     def check_timetable(self, html: str) -> bool:
         soup: BeautifulSoup = BeautifulSoup(html, "html.parser")
-        bool(
-            (
-                soup.select_one('meta[name="description"]')
-                and " programu Plan lekcji Optivum firmy VULCAN"
-                in soup.select_one('meta[name="description"]')["content"]
-            )
-            or "<div style='margin:7px;'><a style='color:inherit' target='_blank' href='http://www.asctimetables.com/timetables_pl.html'>aSc Plan Lekcji - program do tworzenia planu lekcji</a></div>"
-            in html
-        )
+        meta_description = soup.select_one('meta[name="description"]')
+        return (
+            meta_description is not None
+            and " programu Plan lekcji Optivum firmy VULCAN"
+            in meta_description["content"]
+        ) or "<div style='margin:7px;'><a style='color:inherit' target='_blank' href='http://www.asctimetables.com/timetables_pl.html'>aSc Plan Lekcji - program do tworzenia planu lekcji</a></div>" in html
 
     async def check_url_from_rspo(self, raw_url: str) -> str | None:
         try:
@@ -84,47 +81,35 @@ class TimetablesListGenerator:
 
     async def find_timetables_on_website(self, url: str) -> list[str]:
         timetables: list[str] = []
-        requests: int = 1
-        links: list[str] = list(
-            dict.fromkeys(
-                [
-                    urljoin(url, link).rstrip("/")
-                    for link in self.find_links_on_page(await self._request(url))
-                ]
-            )
+        request_count: int = 1
+        links = set(
+            urljoin(url, link).rstrip("/")
+            for link in self.find_links_on_page(await self._request(url))
         )
-        checked_links: list[str] = []
+        checked_links = set[str]()
         for link in links:
             if link in checked_links:
                 continue
-            if requests >= 30:
+            if request_count >= 30:
                 return []
             html, response_url = await self._request(link, return_response_url=True)
-            requests += 1
+            request_count += 1
             if self.check_timetable(html):
                 timetables.append(str(response_url))
                 checked_links += [link, str(response_url)]
                 continue
-            links = list(
-                dict.fromkeys(
-                    links
-                    + [
-                        urljoin(url, l)
-                        for l in self.find_links_on_page(html)
-                        if l != link
-                    ]
-                )
-            )
-            checked_links.append(link)
+            for l in self.find_links_on_page(html):
+                links.add(l)
+            checked_links.add(link)
         for link in links:
             if link in checked_links:
                 continue
-            if requests >= 30:
+            if request_count >= 30:
                 return []
             html, response_url = await self._request(link, return_response_url=True)
             if self.check_timetable(html):
                 timetables.append(str(response_url))
-            requests += 1
+            request_count += 1
         return list(dict.fromkeys(timetables))
 
     async def _request(
