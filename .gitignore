@@ -1,6 +1,10 @@
 **/.idea
 **/.vscode
 **/*.iml
+
 **/node_modules
+**/venv
+
 packages/*/dist
+
 .env
