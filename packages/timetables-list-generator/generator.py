@@ -29,9 +29,9 @@ class FailedRequestException(Exception):
     pass
 
 
-class OptivumTimetablesListGenerator:
+class TimetablesListGenerator:
     def __init__(self) -> None:
-        self._logger = getLogger("optivum-timetable-list-generator")
+        self._logger = getLogger("timetables-list-generator")
 
     def find_links_on_page(self, html: str) -> list[str]:
         soup: BeautifulSoup = BeautifulSoup(html, "html.parser")
@@ -47,10 +47,14 @@ class OptivumTimetablesListGenerator:
 
     def check_timetable(self, html: str) -> bool:
         soup: BeautifulSoup = BeautifulSoup(html, "html.parser")
-        return (
-            soup.select_one('meta[name="description"]')
-            and " programu Plan lekcji Optivum firmy VULCAN"
-            in soup.select_one('meta[name="description"]')["content"]
+        bool(
+            (
+                soup.select_one('meta[name="description"]')
+                and " programu Plan lekcji Optivum firmy VULCAN"
+                in soup.select_one('meta[name="description"]')["content"]
+            )
+            or "<div style='margin:7px;'><a style='color:inherit' target='_blank' href='http://www.asctimetables.com/timetables_pl.html'>aSc Plan Lekcji - program do tworzenia planu lekcji</a></div>"
+            in html
         )
 
     async def check_url_from_rspo(self, raw_url: str) -> str | None:
@@ -79,33 +83,54 @@ class OptivumTimetablesListGenerator:
         return url._replace(scheme="https").geturl().replace(":///", "://")
 
     async def find_timetables_on_website(self, url: str) -> list[str]:
-        timetable: list[str] = []
+        timetables: list[str] = []
         requests: int = 1
-        links: list[str] = [
-            urljoin(url, link)
-            for link in self.find_links_on_page(await self._request(url))
-        ]
-        links = list(dict.fromkeys(links))
+        links: list[str] = list(
+            dict.fromkeys(
+                [
+                    urljoin(url, link).rstrip("/")
+                    for link in self.find_links_on_page(await self._request(url))
+                ]
+            )
+        )
+        checked_links: list[str] = []
         for link in links:
+            if link in checked_links:
+                continue
             if requests >= 30:
                 return []
-            links += [
-                urljoin(url, l)
-                for l in self.find_links_on_page(await self._request(link))
-                if l != link
-            ]
-            links = list(dict.fromkeys(links))
+            html, response_url = await self._request(link, return_response_url=True)
             requests += 1
+            if self.check_timetable(html):
+                timetables.append(str(response_url))
+                checked_links += [link, str(response_url)]
+                continue
+            links = list(
+                dict.fromkeys(
+                    links
+                    + [
+                        urljoin(url, l)
+                        for l in self.find_links_on_page(html)
+                        if l != link
+                    ]
+                )
+            )
+            checked_links.append(link)
         for link in links:
+            if link in checked_links:
+                continue
             if requests >= 30:
                 return []
-            if self.check_timetable(await self._request(link)):
-                timetable.append(link.rstrip("/"))
+            html, response_url = await self._request(link, return_response_url=True)
+            if self.check_timetable(html):
+                timetables.append(str(response_url))
             requests += 1
-        return list(dict.fromkeys(timetable))
+        return list(dict.fromkeys(timetables))
 
-    async def _request(self, url: str, method: str = "GET", **kwargs) -> str:
-        headers: dict = {"User-Agent": "optivum-timetables-list-generator"}
+    async def _request(
+        self, url: str, method: str = "GET", return_response_url: bool = False, **kwargs
+    ) -> str:
+        headers: dict = {"User-Agent": "timetables-list-generator"}
         if kwargs.get("headers"):
             headers.update(kwargs.get("headers"))
             kwargs.pop("headers")
@@ -120,7 +145,14 @@ class OptivumTimetablesListGenerator:
                 self._logger.debug(
                     f"[{response.status}] {response.method} {response.url}"
                 )
-                return await response.text()
+                try:
+                    if return_response_url:
+                        return await response.text(), response.url
+                    return await response.text()
+                except:
+                    if return_response_url:
+                        return "", response.url
+                    return ""
         except:
             raise FailedRequestException()
 
