@@ -49,10 +49,14 @@ class TimetablesListGenerator:
         soup: BeautifulSoup = BeautifulSoup(html, "html.parser")
         meta_description = soup.select_one('meta[name="description"]')
         return (
-            meta_description is not None
-            and " programu Plan lekcji Optivum firmy VULCAN"
-            in meta_description["content"]
-        ) or "<div style='margin:7px;'><a style='color:inherit' target='_blank' href='http://www.asctimetables.com/timetables_pl.html'>aSc Plan Lekcji - program do tworzenia planu lekcji</a></div>" in html
+            (
+                meta_description is not None
+                and " programu Plan lekcji Optivum firmy VULCAN"
+                in meta_description["content"]
+            )
+            or "<div style='margin:7px;'><a style='color:inherit' target='_blank' href='http://www.asctimetables.com/timetables_pl.html'>aSc Plan Lekcji - program do tworzenia planu lekcji</a></div>"
+            in html
+        )
 
     async def check_url_from_rspo(self, raw_url: str) -> str | None:
         try:
