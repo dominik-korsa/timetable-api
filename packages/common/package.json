@@ -5,6 +5,6 @@
   "types": "dist/index.d.ts",
   "type": "module",
   "scripts": {
-    "build": "del-cli dist/ && tsc"
+    "build": "tsc"
   }
 }

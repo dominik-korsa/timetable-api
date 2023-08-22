@@ -3,7 +3,7 @@
   "private": true,
   "main": "dist/index.js",
   "scripts": {
-    "build": "del-cli dist/ && tsc"
+    "build": "tsc"
   },
   "dependencies": {
     "@timetable-api/common": "workspace:*",
