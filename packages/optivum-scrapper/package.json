@@ -3,7 +3,8 @@
   "private": true,
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "start": "node ."
   },
   "dependencies": {
     "@timetable-api/common": "workspace:*",
