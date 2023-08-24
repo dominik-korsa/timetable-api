@@ -1,4 +1,3 @@
-import { JSDOM } from 'jsdom';
 import { Class, Lesson } from './types.js';
 
 export const parseTime = (value: string): number => {
@@ -23,8 +22,26 @@ export const parseUnitLink = (link: Element | null) => {
     return parseUnitUrl(href);
 };
 
-export const parseLesson = (document: Document): Omit<Lesson, 'rowIndex' | 'columnIndex'> => {
-    if (!document.querySelector('.p')) {
+export const splitByBr = (fragment: Element | DocumentFragment) => {
+    let lastBucket: ChildNode[] = [];
+    const buckets = [lastBucket];
+    fragment.childNodes.forEach((node) => {
+        if (node.nodeName === 'br') {
+            lastBucket = [];
+            buckets.push(lastBucket);
+            return;
+        }
+        lastBucket.push(node);
+    });
+    return buckets.map((nodes) => {
+        const childFragment = fragment.ownerDocument.createDocumentFragment();
+        childFragment.append(...nodes);
+        return childFragment;
+    });
+};
+
+export const parseLesson = (fragment: DocumentFragment): Omit<Lesson, 'rowIndex' | 'columnIndex'> => {
+    if (!fragment.querySelector('.p')) {
         return {
             teacherId: null,
             teacherInitials: null,
@@ -33,7 +50,7 @@ export const parseLesson = (document: Document): Omit<Lesson, 'rowIndex' | 'colu
             classes: [],
             subjectCode: null,
             interclassGroupCode: null,
-            comment: document.documentElement.textContent?.trim() ?? null,
+            comment: fragment.textContent?.trim() ?? null,
         };
     }
 
@@ -44,10 +61,10 @@ export const parseLesson = (document: Document): Omit<Lesson, 'rowIndex' | 'colu
     let teacherId: number | null = null;
     let teacherInitials: string | null = null;
 
-    let subjectCode = Array.from(document.querySelectorAll('.p'))
+    let subjectCode = Array.from(fragment.querySelectorAll('.p'))
         .map((subjectTag) => subjectTag.textContent)
         .join('');
-    document.querySelectorAll('.p').forEach((subjectTag) => {
+    fragment.querySelectorAll('.p').forEach((subjectTag) => {
         subjectTag.remove();
     });
     if (subjectCode.includes('-')) {
@@ -59,27 +76,26 @@ export const parseLesson = (document: Document): Omit<Lesson, 'rowIndex' | 'colu
         subjectCode = subjectCode.replace(`#${interclassGroupCode}`, '');
     }
 
-    const roomTag = document.querySelector('.s');
+    const roomTag = fragment.querySelector('.s');
     if (roomTag !== null && roomTag.textContent !== '@') {
         roomId = parseUnitLink(roomTag)?.id ?? null;
         roomCode = roomTag.textContent ?? null;
         roomTag.remove();
     }
 
-    const teacherTag = document.querySelector('.n');
+    const teacherTag = fragment.querySelector('.n');
     if (teacherTag !== null) {
         teacherId = parseUnitLink(teacherTag)?.id ?? null;
         teacherInitials = teacherTag.textContent;
         teacherTag.remove();
     }
 
-    const classes = document.documentElement.innerHTML.split('<br>').map((class_): Class => {
-        const classDocument = new JSDOM(class_).window.document;
+    const classes = splitByBr(fragment).map((classDocument): Class => {
         const classTag = classDocument.querySelector('.o');
         const id = parseUnitLink(classTag)?.id ?? null;
         const code = classTag?.textContent ?? null;
         classTag?.remove();
-        const groupCode = classDocument.documentElement.textContent ?? commonGroupCode;
+        const groupCode = classDocument.textContent ?? commonGroupCode;
         return {
             id,
             code,

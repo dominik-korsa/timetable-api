@@ -1,5 +1,5 @@
 import { slugify } from '@timetable-api/common';
-import { parseLesson, parseTime } from './utils.js';
+import { parseLesson, parseTime, splitByBr } from './utils.js';
 import { JSDOM } from 'jsdom';
 import { Lesson, TableData, TimeSlot, Weekday } from './types.js';
 
@@ -29,20 +29,18 @@ export class Table {
     };
 
     public getFullName(): string | undefined {
-        return this.document.title.match('Plan lekcji (?:oddziału|nauczyciela|sali) - (.+?)')?.[0];
+        return /Plan lekcji (?:oddziału|nauczyciela|sali) - (.+?)/.exec(this.document.title)?.[0];
     }
 
     public getGenerationDate(): string | undefined {
-        return this.document.documentElement.innerHTML
-            .replace(' ', '')
-            .match('<td align="right">\nwygenerowano(.+?)<br>\nza pomocą programu')?.[1]
+        return /<td align="right">\nwygenerowano(.+?)<br>\nza pomocą programu/
+            .exec(this.document.documentElement.innerHTML.replace(' ', ''))?.[1]
             ?.trim();
     }
 
     public getValidationDate(): string | undefined {
-        return this.document.documentElement.innerHTML
-            .replace(' ', '')
-            .match('<td align="left">\nObowiązuje od: (.+?)\n</td>')?.[1]
+        return /<td align="left">\nObowiązuje od: (.+?)\n<\/td>/
+            .exec(this.document.documentElement.innerHTML.replace(' ', ''))?.[1]
             ?.trim();
     }
 
@@ -51,6 +49,7 @@ export class Table {
             const name = row.querySelector('td.nr')?.textContent?.trim();
             const timeSpan = row.querySelector('td.g')?.textContent?.trim();
             if (!name || !timeSpan) {
+                // TODO: Change
                 throw new Error('Cośtam cośtam nie chcę mi się pisać');
             }
             const [beginMinute, endMinute] = timeSpan.split('-').map((time) => parseTime(time));
@@ -80,14 +79,11 @@ export class Table {
         let lessons: Lesson[] = [];
         this.rows.forEach((row, rowIndex) => {
             row.querySelectorAll('.l').forEach((lessonTag, columnIndex) => {
-                const groupHTMLs = lessonTag.innerHTML.split('<br>');
-                const groups = groupHTMLs.map((groupHTML): Lesson => {
-                    const groupDocument = new JSDOM(groupHTML).window.document;
-                    const lessonData = parseLesson(groupDocument);
+                const groups = splitByBr(lessonTag).map((groupDocument): Lesson => {
                     return {
                         rowIndex,
                         columnIndex,
-                        ...lessonData,
+                        ...parseLesson(groupDocument),
                     };
                 });
                 lessons = [...lessons, ...groups.filter((group) => group.comment || group.subjectCode)];
