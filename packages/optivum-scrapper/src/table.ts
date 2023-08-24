@@ -81,7 +81,7 @@ export class Table {
         this.rows.forEach((row, rowIndex) => {
             row.querySelectorAll('.l').forEach((lessonTag, columnIndex) => {
                 const groupHTMLs = lessonTag.innerHTML.split('<br>');
-                const groups = groupHTMLs.map((groupHTML) => {
+                const groups = groupHTMLs.map((groupHTML): Lesson => {
                     const groupDocument = new JSDOM(groupHTML).window.document;
                     const lessonData = parseLesson(groupDocument);
                     return {

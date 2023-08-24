@@ -1,23 +1,29 @@
 import { JSDOM } from 'jsdom';
+import { Class, Lesson } from './types.js';
 
 export const parseTime = (value: string): number => {
     const [hours, minutes] = value.split(':').map((part) => parseInt(part, 10));
     return hours * 60 + minutes;
 };
 
-export const extractClassLevelAndOrderFromCode = (code: string): RegExpMatchArray | null =>
-    code.match('(0-8|r|t|c|p)(.+?)');
+const unitUrlRegex = /([ons])(\d+).html/;
+export const parseUnitUrl = (url: string) => {
+    const match = unitUrlRegex.exec(url);
+    if (match === null) return null;
+    return {
+        type: match[1],
+        id: parseInt(match[2], 10),
+    };
+};
 
-export const extractUnitSymbolAndIdFromUrl = (url: string): RegExpMatchArray | null =>
-    url.match('(o|n|s)([0-9]+).html');
+export const parseUnitLink = (link: Element | null) => {
+    if (link === null) return null;
+    const href = link.getAttribute('href');
+    if (href === null) return null;
+    return parseUnitUrl(href);
+};
 
-export const parseLesson = (document: Document) => {
-    let groupCode: string | null;
-    let interclassGroupCode;
-    let roomId;
-    let roomCode;
-    let teacherId;
-    let teacherInitials;
+export const parseLesson = (document: Document): Omit<Lesson, 'rowIndex' | 'columnIndex'> => {
     if (!document.querySelector('.p')) {
         return {
             teacherId: null,
@@ -27,9 +33,17 @@ export const parseLesson = (document: Document) => {
             classes: [],
             subjectCode: null,
             interclassGroupCode: null,
-            comment: document.documentElement.textContent?.trim(),
+            comment: document.documentElement.textContent?.trim() ?? null,
         };
     }
+
+    let commonGroupCode: string | null = null;
+    let interclassGroupCode: string | null = null;
+    let roomId: number | null = null;
+    let roomCode: string | null = null;
+    let teacherId: number | null = null;
+    let teacherInitials: string | null = null;
+
     let subjectCode = Array.from(document.querySelectorAll('.p'))
         .map((subjectTag) => subjectTag.textContent)
         .join('');
@@ -37,39 +51,42 @@ export const parseLesson = (document: Document) => {
         subjectTag.remove();
     });
     if (subjectCode.includes('-')) {
-        groupCode = subjectCode.split('-')[subjectCode.split('-').length - 1];
-        subjectCode = subjectCode.replace(`-${groupCode}`, '');
+        commonGroupCode = subjectCode.split('-')[subjectCode.split('-').length - 1];
+        subjectCode = subjectCode.replace(`-${commonGroupCode}`, '');
     }
     if (subjectCode.includes('#')) {
         interclassGroupCode = subjectCode.split('#')[subjectCode.split('#').length - 1];
         subjectCode = subjectCode.replace(`#${interclassGroupCode}`, '');
     }
-    if (document.querySelector('.s') && document.querySelector('.s')?.textContent !== '@') {
-        const roomTag = document.querySelector('.s');
-        const href = roomTag?.getAttribute('href');
-        roomId = href ? Number(extractUnitSymbolAndIdFromUrl(href)?.[2]) : null;
-        roomCode = roomTag?.textContent;
-        roomTag?.remove();
+
+    const roomTag = document.querySelector('.s');
+    if (roomTag !== null && roomTag.textContent !== '@') {
+        roomId = parseUnitLink(roomTag)?.id ?? null;
+        roomCode = roomTag.textContent ?? null;
+        roomTag.remove();
     }
-    if (document.querySelector('.n')) {
-        const teacherTag = document.querySelector('.n');
-        const href = teacherTag?.getAttribute('href');
-        teacherId = href ? Number(extractUnitSymbolAndIdFromUrl(href)?.[2]) : null;
-        teacherInitials = teacherTag?.textContent;
-        teacherTag?.remove();
+
+    const teacherTag = document.querySelector('.n');
+    if (teacherTag !== null) {
+        teacherId = parseUnitLink(teacherTag)?.id ?? null;
+        teacherInitials = teacherTag.textContent;
+        teacherTag.remove();
     }
-    const classes = document.documentElement.innerHTML.split('<br>').map((class_) => {
+
+    const classes = document.documentElement.innerHTML.split('<br>').map((class_): Class => {
         const classDocument = new JSDOM(class_).window.document;
         const classTag = classDocument.querySelector('.o');
-        const href = classTag?.getAttribute('href');
-        const id = href ? extractUnitSymbolAndIdFromUrl(href)?.[1] : null;
-        const code = classTag?.textContent;
+        const id = parseUnitLink(classTag)?.id ?? null;
+        const code = classTag?.textContent ?? null;
         classTag?.remove();
-        if (classDocument.documentElement.textContent) {
-            groupCode = classDocument.documentElement.textContent;
-        }
-        return { id, code, groupCode };
+        const groupCode = classDocument.documentElement.textContent ?? commonGroupCode;
+        return {
+            id,
+            code,
+            groupCode,
+        };
     });
+
     return {
         subjectCode,
         teacherId,

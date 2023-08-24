@@ -5,7 +5,7 @@ import childProcess from 'child_process';
 import Ajv from 'ajv';
 import { TerritoriesConfig } from './config-models/territories.js';
 import { SchoolConfig } from './config-models/school.js';
-import { isDefined } from './utils.js';
+import { isDefined } from '@timetable-api/common';
 
 const exec = util.promisify(childProcess.exec);
 

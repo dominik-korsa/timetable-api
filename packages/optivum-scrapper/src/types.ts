@@ -33,7 +33,7 @@ export interface Lesson {
     roomCode: string | null;
     classes: Class[];
     interclassGroupCode: string | null;
-    comment: string | undefined;
+    comment: string | null;
 }
 
 export interface TableData {
