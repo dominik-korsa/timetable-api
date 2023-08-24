@@ -28,7 +28,8 @@ export class Timetable {
         });
         return {
             response: response.data as string,
-            url,
+            // TODO: Return final redirect URL
+            url: response.request,
         };
     }
 
@@ -47,18 +48,22 @@ export class Timetable {
             document = new JSDOM(response).window.document;
         }
         if (document.querySelector('.menu') !== null) {
-            let list: UnitList = { classIds: [], teacherIds: [], roomIds: [] };
+            const list: UnitList = { classIds: [], teacherIds: [], roomIds: [] };
             await Promise.all(
                 [...document.querySelectorAll('a[hidefocus="true"]')].map(async (listLink) => {
                     const href = listLink.getAttribute('href');
                     if (href == null) return;
-                    const { response } = await this.getDocument(listLink.getAttribute('href') ?? '');
-                    list = { ...list, ...this.parseUnitList(response) };
+                    const { response } = await this.getDocument(href);
+                    const unitList = this.parseUnitList(response);
+                    list.classIds.push(...unitList.classIds);
+                    list.classIds.push(...unitList.teacherIds);
+                    list.classIds.push(...unitList.roomIds);
                 }),
             );
             return list;
         }
         if (document.querySelector('frame')) {
+            // TODO: Handle cases, where the base URL does not end with index.html
             const { response } = await this.getDocument(url.replace('index.html', 'lista.html'));
             document = new JSDOM(response).window.document;
         }
