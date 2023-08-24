@@ -8,11 +8,8 @@ module.exports = {
     },
     plugins: ['@typescript-eslint'],
     root: true,
-    ignorePatterns: [
-        "**/node_modules",
-        "**/dist",
-    ],
+    ignorePatterns: ['**/node_modules', '**/dist'],
     rules: {
-        "@typescript-eslint/no-unused-vars": "warn",
-    }
+        '@typescript-eslint/no-unused-vars': 'warn',
+    },
 };

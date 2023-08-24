@@ -10,5 +10,5 @@ export interface RspoSchoolResponse {
     gminaRodzajKod: string;
     miejscowosc: string;
     miejscowoscKodTERYT: string;
-    geolokalizacja: { latitude: string, longitude: string };
+    geolokalizacja: { latitude: string; longitude: string };
 }
