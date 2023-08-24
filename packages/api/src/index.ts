@@ -1,6 +1,5 @@
-import { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
+import { TypeBoxTypeProvider, Type } from '@fastify/type-provider-typebox';
 import Fastify from 'fastify';
-import { Type } from '@sinclair/typebox';
 import FastifySwagger from '@fastify/swagger';
 import FastifySwaggerUi from '@fastify/swagger-ui';
 import FastifyEtag from '@fastify/etag';

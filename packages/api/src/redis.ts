@@ -20,5 +20,5 @@ export async function getSchoolBySpecifier(specifier: string): Promise<School | 
 }
 
 export async function setVersion(rspoId: string, versionId: string, data: TimetableVersionRedis) {
-    await redisClient.json.set(`timetable-versions:${rspoId}:${versionId}`, '$', data);
+    await redisClient.json.set(`timetable-versions:${rspoId}:${versionId}`, '$', data as any);
 }

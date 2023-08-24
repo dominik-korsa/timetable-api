@@ -13,7 +13,6 @@
     "@fastify/etag": "^4.2.0",
     "@fastify/swagger": "^8.8.0",
     "@fastify/swagger-ui": "^1.9.3",
-    "@fastify/type-provider-typebox": "^3.5.0",
     "@timetable-api/common": "workspace:*",
     "@timetable-api/optivum-scrapper": "workspace:*",
     "fastify": "^4.21.0"

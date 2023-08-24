@@ -1,4 +1,4 @@
-import { Static, Type } from '@sinclair/typebox';
+import { Static, Type } from '@fastify/type-provider-typebox';
 import { RspoId, Slug } from './common.js';
 
 export const SpecifierMinimum = Type.Union([

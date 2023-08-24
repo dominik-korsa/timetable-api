@@ -1,4 +1,4 @@
-import { StringOptions, TSchema, Type } from '@sinclair/typebox';
+import { StringOptions, TSchema, Type } from '@fastify/type-provider-typebox';
 export const Id = (options: StringOptions = {}) =>
     Type.String({
         title: 'id',

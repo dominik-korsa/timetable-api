@@ -8,12 +8,12 @@ importers:
 
   .:
     devDependencies:
+      '@fastify/type-provider-typebox':
+        specifier: ^3.5.0
+        version: 3.5.0(@sinclair/typebox@0.31.1)
       '@nrwl/linter':
         specifier: ^16.7.4
         version: 16.7.4(@types/node@20.5.1)(eslint@8.47.0)(nx@16.7.3)(typescript@5.1.6)
-      '@sinclair/typebox':
-        specifier: ^0.31.1
-        version: 0.31.1
       '@tsconfig/recommended':
         specifier: ^1.0.2
         version: 1.0.2
@@ -65,9 +65,6 @@ importers:
       '@fastify/swagger-ui':
         specifier: ^1.9.3
         version: 1.9.3
-      '@fastify/type-provider-typebox':
-        specifier: ^3.5.0
-        version: 3.5.0(@sinclair/typebox@0.31.2)
       '@timetable-api/common':
         specifier: workspace:*
         version: link:../common
@@ -1501,13 +1498,13 @@ packages:
       - supports-color
     dev: false
 
-  /@fastify/type-provider-typebox@3.5.0(@sinclair/typebox@0.31.2):
+  /@fastify/type-provider-typebox@3.5.0(@sinclair/typebox@0.31.1):
     resolution: {integrity: sha512-f48uGzvLflE/y4pvXOS8qjAC+mZmlqev9CPHnB8NDsBSL4EbeydO61IgPuzOkeNlAYeRP9Y56UOKj1XWFibgMw==}
     peerDependencies:
       '@sinclair/typebox': '>=0.26 <=0.31'
     dependencies:
-      '@sinclair/typebox': 0.31.2
-    dev: false
+      '@sinclair/typebox': 0.31.1
+    dev: true
 
   /@humanwhocodes/config-array@0.11.10:
     resolution: {integrity: sha512-KVVjQmNUepDVGXNuoRRdmmEjruj0KfiGSbS8LVc12LMsWDQzRXJ0qdhN8L8uUigKpfEHRhlaQFY0ib1tnUbNeQ==}
@@ -2048,10 +2045,6 @@ packages:
   /@sinclair/typebox@0.31.1:
     resolution: {integrity: sha512-oAGsVU6u4k7pNGfDZG1ujFuku25yV3lFmyxZXXLylm0Pf2Qh9pgGFpGwPbyyFZl9PYH4thS9qRcfs3C2Sn3/SA==}
     dev: true
-
-  /@sinclair/typebox@0.31.2:
-    resolution: {integrity: sha512-+LlOCOcCcsq6zxt1Ld9VkOSTMY6189dBtHHxb2nUftYpiUFXX0mKuK/UgtX84haktCs/x8j8k29v//ohdjlToA==}
-    dev: false
 
   /@tootallnate/once@2.0.0:
     resolution: {integrity: sha512-XCuKFP5PS55gnMVu3dty8KPatLqUoy/ZYzDzAGCQ8JNFCkLXzmI7vNHCR+XpbZaMWQK/vQubr7PkYq8g470J/A==}

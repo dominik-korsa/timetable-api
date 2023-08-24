@@ -1,4 +1,4 @@
-import { Static, Type } from '@sinclair/typebox';
+import { Static, Type } from '@fastify/type-provider-typebox';
 import { Id, Nullable } from './common.js';
 
 const getWeekdayLiteral = <Name extends string, IsoNumber extends number>(name: Name, number: IsoNumber) =>
