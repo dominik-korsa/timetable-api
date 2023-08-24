@@ -1,5 +1,5 @@
-import {Static, Type} from "@sinclair/typebox";
-import {ReasonableUrl, RspoId, Slug, VersionId} from "@timetable-api/common";
+import { Static, Type } from '@fastify/type-provider-typebox';
+import { ReasonableUrl, RspoId, Slug, VersionId } from '@timetable-api/common';
 
 export const SchoolConfigVersionOptivum = Type.Object({
     type: Type.Literal('optivum'),
