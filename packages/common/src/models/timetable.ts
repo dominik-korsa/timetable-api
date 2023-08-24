@@ -1,7 +1,7 @@
 import {Static, Type} from "@sinclair/typebox";
 import {Id, Nullable} from "./common.js";
 
-const getWeekdayLiteral = <Name extends string, Number extends number>(name: Name, number: Number) => Type.Object({
+const getWeekdayLiteral = <Name extends string, IsoNumber extends number>(name: Name, number: IsoNumber) => Type.Object({
    name: Type.Literal(name),
    isoNumber: Type.Literal(number),
 });
@@ -21,7 +21,7 @@ export const TimetableWeekday = Type.Union([
 ]);
 export type TimetableWeekday = Static<typeof TimetableWeekday>;
 
-let TimetableTimeSlot = Type.Object({
+const TimetableTimeSlot = Type.Object({
     name: Type.String(),
     beginMinute: Type.Integer(),
     endMinute: Type.Integer(),

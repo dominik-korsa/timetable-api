@@ -5,7 +5,9 @@
   "scripts": {
     "build": "tsc",
     "start": "node .",
-    "start:ts-node": "node --loader ts-node/esm src/index.ts"
+    "start:ts-node": "node --loader ts-node/esm src/index.ts",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "dependencies": {
     "@fastify/etag": "^4.2.0",

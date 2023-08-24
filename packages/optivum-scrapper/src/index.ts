@@ -70,7 +70,7 @@ export class OptivumParser {
         return hours * 60 + minutes;
     }
 
-    static readonly weekdayNames: Record<string, TimetableWeekday> = {
+    static readonly weekdayNames: Partial<Record<string, TimetableWeekday>> = {
         poniedzialek: {name: 'poniedziałek', isoNumber: 1},
         wtorek: {name: 'wtorek', isoNumber: 2},
         sroda: {name: 'środa', isoNumber: 3},

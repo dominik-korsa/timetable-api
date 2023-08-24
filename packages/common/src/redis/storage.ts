@@ -19,7 +19,7 @@ export const buildRedisStorage = (redisClient: GenericRedis) => buildStorage({
         if (value.state === 'loading') {
             options.PX = req?.cache && typeof req.cache.ttl === 'number' ? req.cache.ttl : 60000;
         } else if ((value.state === 'stale' && value.ttl) || (value.state === 'cached' && !canStale(value))) {
-            options.PXAT = value.createdAt + value.ttl!;
+            options.PXAT = value.createdAt + (value.ttl ?? 0);
         }
         await redisClient.set(`axios-cache:${key}`, JSON.stringify(value), options);
     },
