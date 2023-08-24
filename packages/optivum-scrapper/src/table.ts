@@ -48,9 +48,8 @@ export class Table {
         return Array.from(this.mainTable.querySelectorAll('tr:not(:first-of-type)')).map((row, index) => {
             const name = row.querySelector('td.nr')?.textContent?.trim();
             const timeSpan = row.querySelector('td.g')?.textContent?.trim();
-            if (!name || !timeSpan) {
-                // TODO: Change
-                throw new Error('Cośtam cośtam nie chcę mi się pisać');
+            if (name === undefined || timeSpan === undefined) {
+                throw new Error('Missing time slot name or time span');
             }
             const [beginMinute, endMinute] = timeSpan.split('-').map((time) => parseTime(time));
             return {
@@ -76,17 +75,19 @@ export class Table {
     }
 
     public getLessons(): Lesson[] {
-        let lessons: Lesson[] = [];
+        const lessons: Lesson[] = [];
         this.rows.forEach((row, rowIndex) => {
             row.querySelectorAll('.l').forEach((lessonTag, columnIndex) => {
-                const groups = splitByBr(lessonTag).map((groupDocument): Lesson => {
-                    return {
-                        rowIndex,
-                        columnIndex,
-                        ...parseLesson(groupDocument),
-                    };
-                });
-                lessons = [...lessons, ...groups.filter((group) => group.comment || group.subjectCode)];
+                const groups = splitByBr(lessonTag)
+                    .map(
+                        (groupDocument): Lesson => ({
+                            rowIndex,
+                            columnIndex,
+                            ...parseLesson(groupDocument),
+                        }),
+                    )
+                    .filter((group) => group.comment !== null || group.subjectCode !== null);
+                lessons.push(...groups);
             });
         });
         return lessons;

@@ -70,18 +70,10 @@ export class Timetable {
         let units: { id: number; type: string }[];
         if (document.querySelector('select')) {
             const selectElements = document.querySelectorAll('select');
-            units = [...selectElements]
-                .map((selectElement) => {
-                    return parseUnitUrl(selectElement.value);
-                })
-                .filter(isDefined);
+            units = [...selectElements].map((selectElement) => parseUnitUrl(selectElement.value)).filter(isDefined);
         } else {
             const links = document.querySelectorAll('a');
-            units = [...links]
-                .map((link) => {
-                    return parseUnitLink(link);
-                })
-                .filter(isDefined);
+            units = [...links].map((link) => parseUnitLink(link)).filter(isDefined);
         }
         return {
             classIds: units.filter((unit) => unit.type === 'o').map((unit) => unit.id),

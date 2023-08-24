@@ -19,5 +19,6 @@ module.exports = {
         '@typescript-eslint/prefer-readonly': 'error',
         '@typescript-eslint/strict-boolean-expressions': 'error',
         '@typescript-eslint/prefer-regexp-exec': 'error',
+        'arrow-body-style': ['error', 'as-needed'],
     },
 };
