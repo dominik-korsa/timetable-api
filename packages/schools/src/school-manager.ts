@@ -1,9 +1,8 @@
-import { School, SchoolSpecifier, slugify, SpecifierMinimum } from '@timetable-api/common';
+import { School, SchoolSpecifier, slugify, SpecifierMinimum, isDefined } from '@timetable-api/common';
 import { RspoClient } from './rspo/index.js';
 import { RspoSchoolResponse } from './rspo/types.js';
 import { redisClient } from './redis.js';
 import { loadSchoolConfigs, loadTerritoriesConfig, TerritoriesResolvedConfig, updateRepo } from './repo.js';
-import { isDefined } from './utils.js';
 
 const rspoClient = new RspoClient();
 
