@@ -7,6 +7,7 @@ export class Table {
     private readonly document;
     private readonly mainTable;
     private readonly rows;
+    private readonly documentInnerHtml;
 
     constructor(html: string) {
         this.document = new JSDOM(html).window.document;
@@ -15,7 +16,8 @@ export class Table {
             throw new Error(`Element table.tabela not found ${html}`);
         }
         this.mainTable = mainTable;
-        this.rows = this.mainTable.querySelectorAll('tr:not(:first-of-type)');
+        this.rows = mainTable.querySelectorAll('tr:not(:first-of-type)');
+        this.documentInnerHtml = this.document.documentElement.innerHTML.replace(' ', '');
     }
 
     static readonly weekdayIsoNumber: Record<string, number> = {
@@ -34,18 +36,18 @@ export class Table {
 
     public getGenerationDate(): string | undefined {
         return /<td align="right">\nwygenerowano(.+?)<br>\nza pomocą programu/
-            .exec(this.document.documentElement.innerHTML.replace(' ', ''))?.[1]
+            .exec(this.documentInnerHtml)?.[1]
             ?.trim();
     }
 
     public getValidationDate(): string | undefined {
         return /<td align="left">\nObowiązuje od: (.+?)\n<\/td>/
-            .exec(this.document.documentElement.innerHTML.replace(' ', ''))?.[1]
+            .exec(this.documentInnerHtml)?.[1]
             ?.trim();
     }
 
     public getTimeSlots(): TimeSlot[] {
-        return Array.from(this.mainTable.querySelectorAll('tr:not(:first-of-type)')).map((row, index) => {
+        return [...this.mainTable.querySelectorAll('tr:not(:first-of-type)')].map((row, index) => {
             const name = row.querySelector('td.nr')?.textContent?.trim();
             const timeSpan = row.querySelector('td.g')?.textContent?.trim();
             if (name === undefined || timeSpan === undefined) {
@@ -62,7 +64,7 @@ export class Table {
     }
 
     public getWeekdays(): Weekday[] {
-        return Array.from(this.mainTable.querySelectorAll('tr:first-of-type > th:nth-child(n+3)')).map(
+        return [...this.mainTable.querySelectorAll('tr:first-of-type > th:nth-child(n+3)')].map(
             (weekday, index) => {
                 const weekdayName = weekday.textContent?.trim() ?? '-';
                 return {
