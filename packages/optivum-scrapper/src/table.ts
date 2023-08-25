@@ -41,9 +41,7 @@ export class Table {
     }
 
     public getValidationDate(): string | undefined {
-        return /<td align="left">\nObowiązuje od: (.+?)\n<\/td>/
-            .exec(this.documentInnerHtml)?.[1]
-            ?.trim();
+        return /<td align="left">\nObowiązuje od: (.+?)\n<\/td>/.exec(this.documentInnerHtml)?.[1]?.trim();
     }
 
     public getTimeSlots(): TimeSlot[] {
@@ -64,16 +62,14 @@ export class Table {
     }
 
     public getWeekdays(): Weekday[] {
-        return [...this.mainTable.querySelectorAll('tr:first-of-type > th:nth-child(n+3)')].map(
-            (weekday, index) => {
-                const weekdayName = weekday.textContent?.trim() ?? '-';
-                return {
-                    index,
-                    name: weekdayName,
-                    isoNumber: Table.weekdayIsoNumber[slugify(weekdayName)],
-                };
-            },
-        );
+        return [...this.mainTable.querySelectorAll('tr:first-of-type > th:nth-child(n+3)')].map((weekday, index) => {
+            const weekdayName = weekday.textContent?.trim() ?? '-';
+            return {
+                index,
+                name: weekdayName,
+                isoNumber: Table.weekdayIsoNumber[slugify(weekdayName)],
+            };
+        });
     }
 
     public getLessons(): Lesson[] {

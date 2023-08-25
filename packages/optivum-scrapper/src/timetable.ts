@@ -29,7 +29,7 @@ export class Timetable {
         return {
             response: response.data as string,
             // TODO: Return final redirect URL
-            url: response.request,
+            url,
         };
     }
 

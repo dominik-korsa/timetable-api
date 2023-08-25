@@ -61,9 +61,7 @@ export const parseLesson = (fragment: DocumentFragment): Omit<Lesson, 'rowIndex'
     let teacherId: number | null = null;
     let teacherInitials: string | null = null;
 
-    let subjectCode = [...fragment.querySelectorAll('.p')]
-        .map((subjectTag) => subjectTag.textContent)
-        .join('');
+    let subjectCode = [...fragment.querySelectorAll('.p')].map((subjectTag) => subjectTag.textContent).join('');
     fragment.querySelectorAll('.p').forEach((subjectTag) => {
         subjectTag.remove();
     });
