@@ -105,6 +105,7 @@ export async function parse(url: string) {
                     name: null,
                 });
             }
+
             if (lesson.roomId !== null || lesson.roomCode !== null) {
                 const roomKey = lesson.roomId?.toString() ?? `#${lesson.roomCode}`;
                 const existingRoom = rooms.get(roomKey);
@@ -118,6 +119,7 @@ export async function parse(url: string) {
                     });
                 }
             }
+
             if (lesson.interclassGroupCode !== null) {
                 const existingInterclassGroup = interclassGroups.get(lesson.interclassGroupCode);
                 if (existingInterclassGroup === undefined && lesson.subjectCode !== null) {
@@ -129,8 +131,10 @@ export async function parse(url: string) {
                 } else if (
                     existingInterclassGroup !== undefined &&
                     !existingInterclassGroup.classIds.includes(unit.id.toString())
-                ) existingInterclassGroup.classIds.push(unit.id.toString());
+                )
+                    existingInterclassGroup.classIds.push(unit.id.toString());
             }
+
             lesson.classes.forEach((_class) => {
                 if (_class.code !== null || _class.id !== null) {
                     const classKey = _class.id?.toString() ?? `#${_class.code}`;
@@ -161,6 +165,7 @@ export async function parse(url: string) {
                     }
                 }
             });
+
             const teacherKey =
                 unit.symbol === 'n'
                     ? unit.id.toString()
@@ -211,18 +216,20 @@ export async function parse(url: string) {
                 )
             ) {
                 existingLesson.classes.push({
-                        id: unit.id.toString(),
-                        commonGroupId:
-                            lesson.classes[0]?.groupCode != null && lesson.subjectCode !== null
-                                ? `${unit.id.toString()};${existingLesson.subjectId};${lesson.classes[0]?.groupCode}`
-                                : null,
-                    });
+                    id: unit.id.toString(),
+                    commonGroupId:
+                        lesson.classes[0]?.groupCode != null && lesson.subjectCode !== null
+                            ? `${unit.id.toString()};${existingLesson.subjectId};${lesson.classes[0]?.groupCode}`
+                            : null,
+                });
             }
+
             if (
                 existingLesson?.teacherId === null &&
                 (lesson.teacherId !== null || lesson.teacherInitials !== null || unit.symbol === 'n')
             ) {
-                existingLesson.teacherId = unit.symbol === 'n'
+                existingLesson.teacherId =
+                    unit.symbol === 'n'
                         ? unit.id.toString()
                         : lesson.teacherId?.toString() ?? `#${lesson.teacherInitials}`;
             }
