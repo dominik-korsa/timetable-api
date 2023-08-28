@@ -78,17 +78,18 @@ export class Table {
 
     public getLessons(): LessonTimeSlot[] {
         const lessons: LessonTimeSlot[] = [];
-        this.rows.forEach((row, weekdayIndex) => {
-            row.querySelectorAll('.l').forEach((lessonTag, timeSlotIndex) => {
+        this.rows.forEach((row, timeSlotIndex) => {
+            row.querySelectorAll('.l').forEach((lessonTag, weekdayIndex) => {
                 const groups = splitByBr(lessonTag)
-                    .map(
-                        (groupDocument) => ({
-                            weekdayIndex: weekdayIndex,
-                            timeSlotIndex: timeSlotIndex,
-                            lesson: parseLesson(groupDocument),
-                        }),
-                    )
-                    .filter(({ lesson }) => (lesson.comment !== null && lesson.comment !== '') || lesson.subjectCode !== null);
+                    .map((groupDocument) => ({
+                        timeSlotIndex,
+                        weekdayIndex,
+                        lesson: parseLesson(groupDocument),
+                    }))
+                    .filter(
+                        ({ lesson }) =>
+                            (lesson.comment !== null && lesson.comment !== '') || lesson.subjectCode !== null,
+                    );
                 lessons.push(...groups);
             });
         });

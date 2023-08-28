@@ -31,13 +31,16 @@ export type Lesson = {
     roomCode: string | null;
     classes: Class[];
     comment: string | null;
-} & ({
-    subjectCode: string | null;
-    interclassGroupCode: null;
-} | {
-    subjectCode: string;
-    interclassGroupCode: string;
-});
+} & (
+    | {
+          subjectCode: string | null;
+          interclassGroupCode: null;
+      }
+    | {
+          subjectCode: string;
+          interclassGroupCode: string;
+      }
+);
 
 export interface LessonTimeSlot {
     lesson: Lesson;

@@ -95,7 +95,7 @@ export async function parse(url: string) {
 
     const lessons = weekdays.map(() => timeSlots.map((): TimetableLesson[] => []));
     units.forEach((unit) => {
-        unit.table.getLessons().forEach(({ lesson, weekdayIndex, timeSlotIndex}) => {
+        unit.table.getLessons().forEach(({ lesson, weekdayIndex, timeSlotIndex }) => {
             if (lesson.teacherId === null && lesson.teacherInitials !== null) {
                 teachers.set(`#${lesson.teacherInitials}`, {
                     id: `#${lesson.teacherInitials}`,
@@ -128,9 +128,8 @@ export async function parse(url: string) {
                         classIds: [unit.id.toString()],
                         subjectId: lesson.subjectCode,
                     });
-                } else if (
-                    !existingInterclassGroup.classIds.includes(unit.id.toString())
-                ) existingInterclassGroup.classIds.push(unit.id.toString());
+                } else if (!existingInterclassGroup.classIds.includes(unit.id.toString()))
+                    existingInterclassGroup.classIds.push(unit.id.toString());
             }
 
             lesson.classes.forEach((_class) => {
