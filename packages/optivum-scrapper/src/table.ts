@@ -88,7 +88,7 @@ export class Table {
                             ...parseLesson(groupDocument),
                         }),
                     )
-                    .filter((group) => (group.comment !== null && group.comment !== "") || group.subjectCode !== null);
+                    .filter((group) => (group.comment !== null && group.comment !== '') || group.subjectCode !== null);
                 lessons.push(...groups);
             });
         });

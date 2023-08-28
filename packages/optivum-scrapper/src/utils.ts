@@ -75,7 +75,7 @@ const parseClassCodeRegex = /([0-9]|r|t|c|p)(.+?)/;
 export const parseClassCode = (code: string) => {
     const match = parseClassCodeRegex.exec(code);
     return match ? { level: match[1], order: match[2] } : null;
-}
+};
 
 export const parseLesson = (fragment: DocumentFragment): Omit<Lesson, 'rowIndex' | 'columnIndex'> => {
     if (!fragment.querySelector('.p')) {

@@ -1,18 +1,19 @@
 import {
-    TimetableTimeSlot,
-    TimetableWeekday,
+    maxBy,
     TimetableClass,
-    TimetableTeacher,
-    TimetableRoom,
     TimetableCommonGroup,
-    TimetableSubject,
     TimetableInterclassGroup,
     TimetableLesson,
+    TimetableRoom,
+    TimetableSubject,
+    TimetableTeacher,
+    TimetableTimeSlot,
+    TimetableWeekday,
 } from '@timetable-api/common';
 import { Timetable } from './timetable.js';
 import { Axios } from 'axios';
 import fs from 'fs';
-import { parseTeacherFullName, parseClassCode } from './utils.js';
+import { parseClassCode, parseTeacherFullName } from './utils.js';
 
 export async function parse(url: string) {
     const classes = new Map<string, TimetableClass>();
@@ -25,7 +26,8 @@ export async function parse(url: string) {
     const timetable = new Timetable(url, new Axios({ headers: {} }));
     const unitsIds = await timetable.getUnitIds();
 
-    if (unitsIds.classIds.length === 0 && unitsIds.roomIds.length === 0 && unitsIds.teacherIds.length === 0) throw new Error("No unit IDs found");
+    if (unitsIds.classIds.length === 0 && unitsIds.roomIds.length === 0 && unitsIds.teacherIds.length === 0)
+        throw new Error('No unit IDs found');
 
     const [classTables, teacherTables, roomTables] = await Promise.all([
         Promise.all(
@@ -51,47 +53,47 @@ export async function parse(url: string) {
         ),
     ]);
     const units = [...classTables, ...teacherTables, ...roomTables];
-    const tableWithMaxTimeSlots = units.reduce((a, b) =>
-        a.table.getTimeSlotCount() > b.table.getTimeSlotCount() ? a : b,
-    ).table;
+    const tableWithMaxTimeSlots = maxBy(units, (item) => item.table.getTimeSlotCount()).table;
     const timeSlots: TimetableTimeSlot[] = tableWithMaxTimeSlots.getTimeSlots();
     const weekdays: TimetableWeekday[] = tableWithMaxTimeSlots.getWeekdays();
     const generationDate = tableWithMaxTimeSlots.getGenerationDate();
     const validationDate = tableWithMaxTimeSlots.getValidationDate();
 
-    const lessons = weekdays.map(() => timeSlots.map((): TimetableLesson[] => []));
-    units.forEach((unit) => {
-        if (unit.symbol === 'o' && !classes.get(unit.id.toString())) {
-            classes.set(unit.id.toString(), {
-                id: unit.id.toString(),
-                level: null,
-                order: null,
-                code: null,
-                longOrder: null,
-                fullName: unit.table.getFullName() ?? null,
-                slugs: [],
-            });
-        }
-        if (unit.symbol === 'n' && !teachers.get(unit.id.toString())) {
-            const parsedFullName = parseTeacherFullName(unit.table.getFullName() ?? '');
-            teachers.set(unit.id.toString(), {
-                id: unit.id.toString(),
-                initials: parsedFullName?.initials ?? null,
-                name: parsedFullName?.name.trim() ?? null,
-                fullName: unit.table.getFullName() ?? null,
-                slugs: [],
-            });
-        }
-        if (unit.symbol === 's' && !rooms.get(unit.id.toString())) {
-            rooms.set(unit.id.toString(), {
-                id: unit.id.toString(),
-                code: null,
-                name: null,
-                fullName: unit.table.getFullName() ?? null,
-                slugs: [],
-            });
-        }
+    classTables.forEach((unit) => {
+        if (classes.has(unit.id.toString())) return;
+        classes.set(unit.id.toString(), {
+            id: unit.id.toString(),
+            level: null,
+            order: null,
+            code: null,
+            longOrder: null,
+            fullName: unit.table.getFullName() ?? null,
+            slugs: [],
+        });
     });
+    teacherTables.forEach((unit) => {
+        if (teachers.has(unit.id.toString())) return;
+        const parsedFullName = parseTeacherFullName(unit.table.getFullName() ?? '');
+        teachers.set(unit.id.toString(), {
+            id: unit.id.toString(),
+            initials: parsedFullName?.initials ?? null,
+            name: parsedFullName?.name.trim() ?? null,
+            fullName: unit.table.getFullName() ?? null,
+            slugs: [],
+        });
+    });
+    roomTables.forEach((unit) => {
+        if (rooms.has(unit.id.toString())) return;
+        rooms.set(unit.id.toString(), {
+            id: unit.id.toString(),
+            code: null,
+            name: null,
+            fullName: unit.table.getFullName() ?? null,
+            slugs: [],
+        });
+    });
+
+    const lessons = weekdays.map(() => timeSlots.map((): TimetableLesson[] => []));
     units.forEach((unit) => {
         unit.table.getLessons().forEach((lesson) => {
             if (lesson.teacherId === null && lesson.teacherInitials !== null) {
@@ -164,16 +166,16 @@ export async function parse(url: string) {
                         }
                     }
                 }
-            })
+            });
             const teacherKey =
                 unit.symbol === 'n'
                     ? unit.id.toString()
                     : lesson.teacherId?.toString() ??
-                    (lesson.teacherInitials != null ? `#${lesson.teacherInitials}` : null);
+                      (lesson.teacherInitials != null ? `#${lesson.teacherInitials}` : null);
 
             const existingLesson = lessons[lesson.columnIndex][lesson.rowIndex].find(
                 (l) =>
-                    l.interclassGroupId !== null && l.interclassGroupId === lesson.interclassGroupCode ||
+                    (l.interclassGroupId !== null && l.interclassGroupId === lesson.interclassGroupCode) ||
                     (teacherKey === l.teacherId && l.teacherId !== null),
             );
             if (existingLesson === undefined) {
@@ -182,16 +184,15 @@ export async function parse(url: string) {
                     teacherId:
                         unit.symbol === 'n'
                             ? unit.id.toString()
-                            : (lesson.teacherId?.toString() ??
-                              (lesson.teacherInitials !== null ? `#${lesson.teacherInitials}` : null)),
+                            : lesson.teacherId?.toString() ??
+                              (lesson.teacherInitials !== null ? `#${lesson.teacherInitials}` : null),
                     roomId:
                         unit.symbol === 's'
                             ? unit.id.toString()
-                            : (lesson.roomId?.toString() ??
-                              (lesson.roomCode !== null ? `#${lesson.roomCode}` : null)),
+                            : lesson.roomId?.toString() ?? (lesson.roomCode !== null ? `#${lesson.roomCode}` : null),
                     classes: lesson.classes.map((_class) => {
                         const classKey =
-                            unit.symbol === 'o' ? unit.id.toString() : (_class.id?.toString() ?? `#${_class.code}`);
+                            unit.symbol === 'o' ? unit.id.toString() : _class.id?.toString() ?? `#${_class.code}`;
                         return {
                             id: classKey,
                             commonGroupId:
@@ -211,11 +212,9 @@ export async function parse(url: string) {
                         c.id === unit.id.toString() &&
                         c.commonGroupId ===
                             (lesson.classes[0]?.groupCode != null
-                                ? `${unit.id.toString()};${existingLesson.subjectId};${lesson.classes[0]
-                                      ?.groupCode}`
+                                ? `${unit.id.toString()};${existingLesson.subjectId};${lesson.classes[0]?.groupCode}`
                                 : null),
                 )
-
             ) {
                 lessons[lesson.columnIndex][lesson.rowIndex][
                     lessons[lesson.columnIndex][lesson.rowIndex].indexOf(existingLesson)
@@ -225,16 +224,21 @@ export async function parse(url: string) {
                         id: unit.id.toString(),
                         commonGroupId:
                             lesson.classes[0]?.groupCode != null && lesson.subjectCode !== null
-                                ? `${unit.id.toString()};${existingLesson.subjectId};${lesson.classes[0]
-                                      ?.groupCode}`
+                                ? `${unit.id.toString()};${existingLesson.subjectId};${lesson.classes[0]?.groupCode}`
                                 : null,
                     },
                 ];
             }
-            if (existingLesson?.teacherId === null && ((lesson.teacherId !== null || lesson.teacherInitials !== null) || unit.symbol === 'n')) {
+            if (
+                existingLesson?.teacherId === null &&
+                (lesson.teacherId !== null || lesson.teacherInitials !== null || unit.symbol === 'n')
+            ) {
                 lessons[lesson.columnIndex][lesson.rowIndex][
                     lessons[lesson.columnIndex][lesson.rowIndex].indexOf(existingLesson)
-                ].teacherId = unit.symbol === 'n' ? unit.id.toString() : (lesson.teacherId?.toString() ?? `#${lesson.teacherInitials}`)
+                ].teacherId =
+                    unit.symbol === 'n'
+                        ? unit.id.toString()
+                        : lesson.teacherId?.toString() ?? `#${lesson.teacherInitials}`;
             }
         });
     });
