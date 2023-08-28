@@ -31,7 +31,7 @@ export class Table {
     };
 
     public getFullName(): string | undefined {
-        return /Plan lekcji (?:oddziału|nauczyciela|sali) - (.+?)/.exec(this.document.title)?.[0];
+        return /Plan lekcji (?:oddziału|nauczyciela|sali) - (.+)/.exec(this.document.title)?.[1];
     }
 
     public getGenerationDate(): string | undefined {
@@ -61,6 +61,10 @@ export class Table {
         });
     }
 
+    public getTimeSlotCount(): number {
+        return this.rows.length;
+    }
+
     public getWeekdays(): Weekday[] {
         return [...this.mainTable.querySelectorAll('tr:first-of-type > th:nth-child(n+3)')].map((weekday, index) => {
             const weekdayName = weekday.textContent?.trim() ?? '-';
@@ -84,7 +88,7 @@ export class Table {
                             ...parseLesson(groupDocument),
                         }),
                     )
-                    .filter((group) => group.comment !== null || group.subjectCode !== null);
+                    .filter((group) => (group.comment !== null && group.comment !== "") || group.subjectCode !== null);
                 lessons.push(...groups);
             });
         });
@@ -97,6 +101,7 @@ export class Table {
             generationDate: this.getGenerationDate(),
             validationDate: this.getValidationDate(),
             timeSlots: this.getTimeSlots(),
+            timeSlotCount: this.getTimeSlotCount(),
             weekdays: this.getWeekdays(),
             lessons: this.getLessons(),
         };

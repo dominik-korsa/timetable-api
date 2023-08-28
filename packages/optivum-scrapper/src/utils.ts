@@ -26,7 +26,7 @@ export const splitByBr = (fragment: Element | DocumentFragment) => {
     let lastBucket: ChildNode[] = [];
     const buckets = [lastBucket];
     fragment.childNodes.forEach((node) => {
-        if (node.nodeName === 'br') {
+        if (node.nodeName === 'BR') {
             lastBucket = [];
             buckets.push(lastBucket);
             return;
@@ -39,6 +39,43 @@ export const splitByBr = (fragment: Element | DocumentFragment) => {
         return childFragment;
     });
 };
+
+export const splitByComma = (fragment: Element | DocumentFragment) => {
+    let lastBucket: ChildNode[] = [];
+    const buckets = [lastBucket];
+    fragment.childNodes.forEach((node) => {
+        if (node.nodeName !== '#text') {
+            lastBucket.push(node);
+            return;
+        }
+
+        const parts = (node as Text).data.split(',');
+        parts.forEach((part, index) => {
+            if (index !== 0) {
+                lastBucket = [];
+                buckets.push(lastBucket);
+            }
+            if (part !== '') lastBucket.push(fragment.ownerDocument.createTextNode(part));
+        });
+    });
+    return buckets.map((nodes) => {
+        const childFragment = fragment.ownerDocument.createDocumentFragment();
+        childFragment.append(...nodes);
+        return childFragment;
+    });
+};
+
+const parseTeacherFullNameRegex = /(.+?) \((.+?)\)/;
+export const parseTeacherFullName = (fullName: string) => {
+    const match = parseTeacherFullNameRegex.exec(fullName);
+    return match ? { name: match[1], initials: match[2] } : null;
+};
+
+const parseClassCodeRegex = /([0-9]|r|t|c|p)(.+?)/;
+export const parseClassCode = (code: string) => {
+    const match = parseClassCodeRegex.exec(code);
+    return match ? { level: match[1], order: match[2] } : null;
+}
 
 export const parseLesson = (fragment: DocumentFragment): Omit<Lesson, 'rowIndex' | 'columnIndex'> => {
     if (!fragment.querySelector('.p')) {
@@ -75,9 +112,11 @@ export const parseLesson = (fragment: DocumentFragment): Omit<Lesson, 'rowIndex'
     }
 
     const roomTag = fragment.querySelector('.s');
-    if (roomTag !== null && roomTag.textContent !== '@') {
-        roomId = parseUnitLink(roomTag)?.id ?? null;
-        roomCode = roomTag.textContent ?? null;
+    if (roomTag !== null) {
+        if (roomTag.textContent !== '@') {
+            roomId = parseUnitLink(roomTag)?.id ?? null;
+            roomCode = roomTag.textContent ?? null;
+        }
         roomTag.remove();
     }
 
@@ -87,20 +126,19 @@ export const parseLesson = (fragment: DocumentFragment): Omit<Lesson, 'rowIndex'
         teacherInitials = teacherTag.textContent;
         teacherTag.remove();
     }
-
-    const classes = splitByBr(fragment).map((classDocument): Class => {
+    const classes = splitByComma(fragment).map((classDocument): Class => {
         const classTag = classDocument.querySelector('.o');
         const id = parseUnitLink(classTag)?.id ?? null;
         const code = classTag?.textContent ?? null;
         classTag?.remove();
-        const groupCode = classDocument.textContent ?? commonGroupCode;
+        let groupCode = commonGroupCode ?? classDocument.textContent?.trim().replace('-', '') ?? null;
+        if (groupCode === '') groupCode = null;
         return {
             id,
             code,
             groupCode,
         };
     });
-
     return {
         subjectCode,
         teacherId,

@@ -11,6 +11,6 @@ export const slugify = (value: string) =>
         .replaceAll('ś', 's')
         .replaceAll('ź', 'z')
         .replaceAll('ż', 'z')
-        .replaceAll(/[^a-z]/g, '-');
+        .replaceAll(/[^a-z0-9]/g, '-');
 
 export const isDefined = <T>(value: T | null | undefined): value is T => value !== null && value !== undefined;

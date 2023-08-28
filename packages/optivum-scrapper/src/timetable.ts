@@ -34,7 +34,8 @@ export class Timetable {
     }
 
     public async getTable(symbol: string, id: number) {
-        const { response } = await this.getDocument(`/plany/${symbol}${id}.html`);
+        console.log(new URL(`plany/${symbol}${id}.html`, this.baseUrl).toString());
+        const { response } = await this.getDocument(`plany/${symbol}${id}.html`);
         return new Table(response);
     }
 
@@ -56,8 +57,8 @@ export class Timetable {
                     const { response } = await this.getDocument(href);
                     const unitList = this.parseUnitList(response);
                     list.classIds.push(...unitList.classIds);
-                    list.classIds.push(...unitList.teacherIds);
-                    list.classIds.push(...unitList.roomIds);
+                    list.teacherIds.push(...unitList.teacherIds);
+                    list.roomIds.push(...unitList.roomIds);
                 }),
             );
             return list;
