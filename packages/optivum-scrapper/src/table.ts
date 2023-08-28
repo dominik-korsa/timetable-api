@@ -1,7 +1,7 @@
 import { slugify } from '@timetable-api/common';
 import { parseLesson, parseTime, splitByBr } from './utils.js';
 import { JSDOM } from 'jsdom';
-import { Lesson, TableData, TimeSlot, Weekday } from './types.js';
+import { LessonTimeSlot, TableData, TimeSlot, Weekday } from './types.js';
 
 export class Table {
     private readonly document;
@@ -31,7 +31,7 @@ export class Table {
     };
 
     public getFullName(): string | undefined {
-        return /Plan lekcji (?:oddziału|nauczyciela|sali) - (.+?)/.exec(this.document.title)?.[0];
+        return /Plan lekcji (?:oddziału|nauczyciela|sali) - (.+)/.exec(this.document.title)?.[1];
     }
 
     public getGenerationDate(): string | undefined {
@@ -61,6 +61,10 @@ export class Table {
         });
     }
 
+    public getTimeSlotCount(): number {
+        return this.rows.length;
+    }
+
     public getWeekdays(): Weekday[] {
         return [...this.mainTable.querySelectorAll('tr:first-of-type > th:nth-child(n+3)')].map((weekday, index) => {
             const weekdayName = weekday.textContent?.trim() ?? '-';
@@ -72,19 +76,20 @@ export class Table {
         });
     }
 
-    public getLessons(): Lesson[] {
-        const lessons: Lesson[] = [];
-        this.rows.forEach((row, rowIndex) => {
-            row.querySelectorAll('.l').forEach((lessonTag, columnIndex) => {
+    public getLessons(): LessonTimeSlot[] {
+        const lessons: LessonTimeSlot[] = [];
+        this.rows.forEach((row, timeSlotIndex) => {
+            row.querySelectorAll('.l').forEach((lessonTag, weekdayIndex) => {
                 const groups = splitByBr(lessonTag)
-                    .map(
-                        (groupDocument): Lesson => ({
-                            rowIndex,
-                            columnIndex,
-                            ...parseLesson(groupDocument),
-                        }),
-                    )
-                    .filter((group) => group.comment !== null || group.subjectCode !== null);
+                    .map((groupDocument) => ({
+                        timeSlotIndex,
+                        weekdayIndex,
+                        lesson: parseLesson(groupDocument),
+                    }))
+                    .filter(
+                        ({ lesson }) =>
+                            (lesson.comment !== null && lesson.comment !== '') || lesson.subjectCode !== null,
+                    );
                 lessons.push(...groups);
             });
         });
@@ -97,6 +102,7 @@ export class Table {
             generationDate: this.getGenerationDate(),
             validationDate: this.getValidationDate(),
             timeSlots: this.getTimeSlots(),
+            timeSlotCount: this.getTimeSlotCount(),
             weekdays: this.getWeekdays(),
             lessons: this.getLessons(),
         };

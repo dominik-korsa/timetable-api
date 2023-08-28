@@ -34,7 +34,7 @@ export class Timetable {
     }
 
     public async getTable(symbol: string, id: number) {
-        const { response } = await this.getDocument(`/plany/${symbol}${id}.html`);
+        const { response } = await this.getDocument(`plany/${symbol}${id}.html`);
         return new Table(response);
     }
 
@@ -46,6 +46,7 @@ export class Timetable {
             url = this.baseUrl.split('/plany/')[0] + '/index.html';
             const { response } = await this.getDocument(url);
             document = new JSDOM(response).window.document;
+            // TODO url := redirect URL of response
         }
         if (document.querySelector('.menu') !== null) {
             const list: UnitList = { classIds: [], teacherIds: [], roomIds: [] };
@@ -56,16 +57,17 @@ export class Timetable {
                     const { response } = await this.getDocument(href);
                     const unitList = this.parseUnitList(response);
                     list.classIds.push(...unitList.classIds);
-                    list.classIds.push(...unitList.teacherIds);
-                    list.classIds.push(...unitList.roomIds);
+                    list.teacherIds.push(...unitList.teacherIds);
+                    list.roomIds.push(...unitList.roomIds);
                 }),
             );
             return list;
         }
         if (document.querySelector('frame')) {
-            // TODO: Handle cases, where the base URL does not end with index.html
-            const { response } = await this.getDocument(url.replace('index.html', 'lista.html'));
+            // TODO: Handle cases, where the base URL does not end with index.html or /
+            const { response } = await this.getDocument(new URL('lista.html', url).toString());
             document = new JSDOM(response).window.document;
+            // TODO url := redirect URL of response
         }
         return this.parseUnitList(document.documentElement.innerHTML);
     }

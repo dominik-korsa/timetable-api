@@ -1,89 +1,100 @@
 import { Static, Type } from '@fastify/type-provider-typebox';
 import { Id, Nullable } from './common.js';
 
-const getWeekdayLiteral = <Name extends string, IsoNumber extends number>(name: Name, number: IsoNumber) =>
-    Type.Object({
-        name: Type.Literal(name),
-        isoNumber: Type.Literal(number),
-    });
+export const TimetableWeekday = Type.Object({
+    index: Type.Number(),
+    name: Type.String(),
+    isoNumber: Nullable(Type.Number()),
+});
 
-export const TimetableWeekday = Type.Union([
-    getWeekdayLiteral('poniedziałek', 1),
-    getWeekdayLiteral('wtorek', 2),
-    getWeekdayLiteral('środa', 3),
-    getWeekdayLiteral('czwartek', 4),
-    getWeekdayLiteral('piątek', 5),
-    getWeekdayLiteral('sobota', 6),
-    getWeekdayLiteral('niedziela', 7),
-    Type.Object({
-        name: Type.String(),
-        isoNumber: Type.Null(),
-    }),
-]);
 export type TimetableWeekday = Static<typeof TimetableWeekday>;
 
 const TimetableTimeSlot = Type.Object({
+    index: Type.Number(),
     name: Type.String(),
     beginMinute: Type.Integer(),
     endMinute: Type.Integer(),
 });
 export type TimetableTimeSlot = Static<typeof TimetableTimeSlot>;
 
+const TimetableClass = Type.Object({
+    id: Id(),
+    level: Nullable(Type.String()),
+    order: Nullable(Type.String()),
+    code: Nullable(Type.String()),
+    longOrder: Nullable(Type.String()),
+    fullName: Nullable(Type.String()),
+    slugs: Type.Array(Id(), { minItems: 1 }),
+});
+export type TimetableClass = Static<typeof TimetableClass>;
+
+const TimetableTeacher = Type.Object({
+    id: Id(),
+    initials: Nullable(Type.String()),
+    name: Nullable(Type.String()),
+    fullName: Nullable(Type.String()),
+    slugs: Type.Array(Id(), { minItems: 1 }),
+});
+export type TimetableTeacher = Static<typeof TimetableTeacher>;
+
+const TimetableRoom = Type.Object({
+    id: Id(),
+    code: Nullable(Type.String()),
+    name: Nullable(Type.String()),
+    fullName: Nullable(Type.String()),
+    slugs: Type.Array(Id(), { minItems: 1 }),
+});
+export type TimetableRoom = Static<typeof TimetableRoom>;
+
+const TimetableSubject = Type.Object({
+    id: Id(),
+    name: Nullable(Type.String()),
+});
+export type TimetableSubject = Static<typeof TimetableSubject>;
+
+const TimetableCommonGroup = Type.Object({
+    id: Id(),
+    classId: Id(),
+    subjectId: Id(),
+    code: Type.String(),
+});
+export type TimetableCommonGroup = Static<typeof TimetableCommonGroup>;
+
+const TimetableInterclassGroup = Type.Object({
+    id: Id(),
+    classIds: Type.Array(Id()),
+    subjectId: Id(),
+});
+export type TimetableInterclassGroup = Static<typeof TimetableInterclassGroup>;
+
 export const TimetableVersionCommon = Type.Object({
     weekdays: Type.Array(TimetableWeekday),
     timeSlots: Type.Array(TimetableTimeSlot),
-    classes: Type.Array(
-        Type.Object({
-            name: Type.String(),
-            id: Id(),
-            slugs: Type.Array(Id(), { minItems: 1 }),
-            hasTimetable: Type.Boolean(),
-        }),
-    ),
-    rooms: Type.Array(
-        Type.Object({
-            name: Type.String(),
-            id: Id(),
-            slugs: Type.Array(Id(), { minItems: 1 }),
-            hasTimetable: Type.Boolean(),
-        }),
-    ),
-    teachers: Type.Array(
-        Type.Object({
-            initials: Type.String(),
-            shortName: Type.String(),
-            fullName: Type.String(),
-            id: Id(),
-            slugs: Type.Array(Id(), { minItems: 1 }),
-            hasTimetable: Type.Boolean(),
-        }),
-    ),
+    classes: Type.Array(TimetableClass),
+    rooms: Type.Array(TimetableRoom),
+    teachers: Type.Array(TimetableTeacher),
+    subjects: Type.Array(TimetableSubject),
+    commonGroups: Type.Array(TimetableCommonGroup),
+    interclassGroup: Type.Array(TimetableInterclassGroup),
 });
 export type TimetableVersionCommon = Static<typeof TimetableVersionCommon>;
 
 const TimetableLesson = Type.Object({
-    subject: Type.String(),
-    subjectShort: Type.String(),
+    subjectId: Nullable(Id()),
     teacherId: Nullable(Id()),
     roomId: Nullable(Id()),
-    group: Nullable(
+    classes: Type.Array(
         Type.Object({
             id: Id(),
-            name: Type.String(),
+            commonGroupId: Nullable(Id()),
         }),
     ),
-    classIds: Type.Array(Type.String()),
-    color: Nullable(Type.String()),
+    interclassGroupId: Nullable(Id()),
+    comment: Nullable(Type.String()),
 });
+export type TimetableLesson = Static<typeof TimetableLesson>;
 
 const TimetableVersionLessons = Type.Object({
-    weekdays: Type.Array(
-        Type.Object({
-            timeSlots: Type.Array(
-                Type.Object({
-                    lessons: Type.Array(TimetableLesson),
-                }),
-            ),
-        }),
-    ),
+    lessons: Type.Array(TimetableLesson),
 });
+export type TimetableVersionLessons = Static<typeof TimetableVersionLessons>;
