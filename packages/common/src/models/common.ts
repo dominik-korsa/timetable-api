@@ -31,6 +31,7 @@ export const VersionId = Type.String({
     title: 'Timetable version id',
 });
 
+// TODO: Complete
 export const ReasonableUrl = Type.String({
     title: 'A reasonable URL',
     pattern: '^https?://',
