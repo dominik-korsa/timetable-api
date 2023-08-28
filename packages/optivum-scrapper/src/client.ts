@@ -32,21 +32,21 @@ export async function parse(url: string) {
     const [classTables, teacherTables, roomTables] = await Promise.all([
         Promise.all(
             unitsIds.classIds.map(async (classId) => ({
-                symbol: 'o',
+                symbol: 'o' as const,
                 id: classId,
                 table: await timetable.getTable('o', classId),
             })),
         ),
         Promise.all(
             unitsIds.teacherIds.map(async (teacherId) => ({
-                symbol: 'n',
+                symbol: 'n' as const,
                 id: teacherId,
                 table: await timetable.getTable('n', teacherId),
             })),
         ),
         Promise.all(
             unitsIds.roomIds.map(async (roomId) => ({
-                symbol: 's',
+                symbol: 's' as const,
                 id: roomId,
                 table: await timetable.getTable('s', roomId),
             })),
@@ -129,13 +129,7 @@ export async function parse(url: string) {
                 } else if (
                     existingInterclassGroup !== undefined &&
                     !existingInterclassGroup.classIds.includes(unit.id.toString())
-                ) {
-                    interclassGroups.set(existingInterclassGroup.id, {
-                        id: existingInterclassGroup.id,
-                        classIds: [...existingInterclassGroup.classIds, unit.id.toString()],
-                        subjectId: existingInterclassGroup.subjectId,
-                    });
-                }
+                ) existingInterclassGroup.classIds.push(unit.id.toString());
             }
             lesson.classes.forEach((_class) => {
                 if (_class.code !== null || _class.id !== null) {
@@ -216,16 +210,13 @@ export async function parse(url: string) {
                                 : null),
                 )
             ) {
-                existingLesson.classes = [
-                    ...existingLesson.classes,
-                    {
+                existingLesson.classes.push({
                         id: unit.id.toString(),
                         commonGroupId:
                             lesson.classes[0]?.groupCode != null && lesson.subjectCode !== null
                                 ? `${unit.id.toString()};${existingLesson.subjectId};${lesson.classes[0]?.groupCode}`
                                 : null,
-                    },
-                ];
+                    });
             }
             if (
                 existingLesson?.teacherId === null &&
