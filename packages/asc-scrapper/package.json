@@ -1,0 +1,14 @@
+{
+  "name": "@timetable-api/asc-scrapper",
+  "private": true,
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
+  },
+  "dependencies": {
+    "@timetable-api/common": "workspace:*"
+  },
+  "type": "module"
+}
