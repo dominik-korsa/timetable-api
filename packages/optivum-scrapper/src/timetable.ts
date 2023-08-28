@@ -34,7 +34,6 @@ export class Timetable {
     }
 
     public async getTable(symbol: string, id: number) {
-        console.log(new URL(`plany/${symbol}${id}.html`, this.baseUrl).toString());
         const { response } = await this.getDocument(`plany/${symbol}${id}.html`);
         return new Table(response);
     }
