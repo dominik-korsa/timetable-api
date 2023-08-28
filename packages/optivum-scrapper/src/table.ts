@@ -1,7 +1,7 @@
 import { slugify } from '@timetable-api/common';
 import { parseLesson, parseTime, splitByBr } from './utils.js';
 import { JSDOM } from 'jsdom';
-import { Lesson, TableData, TimeSlot, Weekday } from './types.js';
+import { LessonTimeSlot, TableData, TimeSlot, Weekday } from './types.js';
 
 export class Table {
     private readonly document;
@@ -76,19 +76,19 @@ export class Table {
         });
     }
 
-    public getLessons(): Lesson[] {
-        const lessons: Lesson[] = [];
-        this.rows.forEach((row, rowIndex) => {
-            row.querySelectorAll('.l').forEach((lessonTag, columnIndex) => {
+    public getLessons(): LessonTimeSlot[] {
+        const lessons: LessonTimeSlot[] = [];
+        this.rows.forEach((row, weekdayIndex) => {
+            row.querySelectorAll('.l').forEach((lessonTag, timeSlotIndex) => {
                 const groups = splitByBr(lessonTag)
                     .map(
-                        (groupDocument): Lesson => ({
-                            rowIndex,
-                            columnIndex,
-                            ...parseLesson(groupDocument),
+                        (groupDocument) => ({
+                            weekdayIndex: weekdayIndex,
+                            timeSlotIndex: timeSlotIndex,
+                            lesson: parseLesson(groupDocument),
                         }),
                     )
-                    .filter((group) => (group.comment !== null && group.comment !== '') || group.subjectCode !== null);
+                    .filter(({ lesson }) => (lesson.comment !== null && lesson.comment !== '') || lesson.subjectCode !== null);
                 lessons.push(...groups);
             });
         });

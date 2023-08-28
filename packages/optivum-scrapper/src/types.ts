@@ -23,17 +23,26 @@ export interface Class {
     groupCode: string | null;
 }
 
-export interface Lesson {
-    rowIndex: number;
-    columnIndex: number;
+export type Lesson = {
     subjectCode: string | null;
     teacherId: number | null;
     teacherInitials: string | null;
     roomId: number | null;
     roomCode: string | null;
     classes: Class[];
-    interclassGroupCode: string | null;
     comment: string | null;
+} & ({
+    subjectCode: string | null;
+    interclassGroupCode: null;
+} | {
+    subjectCode: string;
+    interclassGroupCode: string;
+});
+
+export interface LessonTimeSlot {
+    lesson: Lesson;
+    weekdayIndex: number;
+    timeSlotIndex: number;
 }
 
 export interface TableData {
@@ -43,5 +52,5 @@ export interface TableData {
     timeSlots: TimeSlot[];
     timeSlotCount: number;
     weekdays: Weekday[];
-    lessons: Lesson[];
+    lessons: LessonTimeSlot[];
 }

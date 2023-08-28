@@ -77,7 +77,7 @@ export const parseClassCode = (code: string) => {
     return match ? { level: match[1], order: match[2] } : null;
 };
 
-export const parseLesson = (fragment: DocumentFragment): Omit<Lesson, 'rowIndex' | 'columnIndex'> => {
+export const parseLesson = (fragment: DocumentFragment): Lesson => {
     if (!fragment.querySelector('.p')) {
         return {
             teacherId: null,

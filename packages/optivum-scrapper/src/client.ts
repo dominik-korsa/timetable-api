@@ -95,7 +95,7 @@ export async function parse(url: string) {
 
     const lessons = weekdays.map(() => timeSlots.map((): TimetableLesson[] => []));
     units.forEach((unit) => {
-        unit.table.getLessons().forEach((lesson) => {
+        unit.table.getLessons().forEach(({ lesson, weekdayIndex, timeSlotIndex}) => {
             if (lesson.teacherId === null && lesson.teacherInitials !== null) {
                 teachers.set(`#${lesson.teacherInitials}`, {
                     id: `#${lesson.teacherInitials}`,
@@ -122,17 +122,15 @@ export async function parse(url: string) {
 
             if (lesson.interclassGroupCode !== null) {
                 const existingInterclassGroup = interclassGroups.get(lesson.interclassGroupCode);
-                if (existingInterclassGroup === undefined && lesson.subjectCode !== null) {
+                if (existingInterclassGroup === undefined) {
                     interclassGroups.set(lesson.interclassGroupCode, {
                         id: lesson.interclassGroupCode,
                         classIds: [unit.id.toString()],
                         subjectId: lesson.subjectCode,
                     });
                 } else if (
-                    existingInterclassGroup !== undefined &&
                     !existingInterclassGroup.classIds.includes(unit.id.toString())
-                )
-                    existingInterclassGroup.classIds.push(unit.id.toString());
+                ) existingInterclassGroup.classIds.push(unit.id.toString());
             }
 
             lesson.classes.forEach((_class) => {
@@ -172,13 +170,13 @@ export async function parse(url: string) {
                     : lesson.teacherId?.toString() ??
                       (lesson.teacherInitials != null ? `#${lesson.teacherInitials}` : null);
 
-            const existingLesson = lessons[lesson.columnIndex][lesson.rowIndex].find(
+            const existingLesson = lessons[weekdayIndex][timeSlotIndex].find(
                 (l) =>
                     (l.interclassGroupId !== null && l.interclassGroupId === lesson.interclassGroupCode) ||
                     (teacherKey === l.teacherId && l.teacherId !== null),
             );
             if (existingLesson === undefined) {
-                lessons[lesson.columnIndex][lesson.rowIndex].push({
+                lessons[weekdayIndex][timeSlotIndex].push({
                     subjectId: lesson.subjectCode,
                     teacherId:
                         unit.symbol === 'n'
@@ -242,12 +240,12 @@ export async function parse(url: string) {
             validationDate,
             weekdays,
             timeSlots,
-            classes: Array.from(classes),
-            teachers: Array.from(teachers),
-            rooms: Array.from(rooms),
-            subjects: Array.from(subjects),
-            commonGroups: Array.from(commonGroups),
-            interclassGroups: Array.from(interclassGroups),
+            classes: classes.values(),
+            teachers: teachers.values(),
+            rooms: rooms.values(),
+            subjects: subjects.values(),
+            commonGroups: commonGroups.values(),
+            interclassGroups: interclassGroups.values(),
             lessons,
         }),
         'utf8',
