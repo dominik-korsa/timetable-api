@@ -216,9 +216,7 @@ export async function parse(url: string) {
                                 : null),
                 )
             ) {
-                lessons[lesson.columnIndex][lesson.rowIndex][
-                    lessons[lesson.columnIndex][lesson.rowIndex].indexOf(existingLesson)
-                ].classes = [
+                existingLesson.classes = [
                     ...existingLesson.classes,
                     {
                         id: unit.id.toString(),
@@ -233,10 +231,7 @@ export async function parse(url: string) {
                 existingLesson?.teacherId === null &&
                 (lesson.teacherId !== null || lesson.teacherInitials !== null || unit.symbol === 'n')
             ) {
-                lessons[lesson.columnIndex][lesson.rowIndex][
-                    lessons[lesson.columnIndex][lesson.rowIndex].indexOf(existingLesson)
-                ].teacherId =
-                    unit.symbol === 'n'
+                existingLesson.teacherId = unit.symbol === 'n'
                         ? unit.id.toString()
                         : lesson.teacherId?.toString() ?? `#${lesson.teacherInitials}`;
             }
