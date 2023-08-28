@@ -238,7 +238,7 @@ export async function parse(url: string) {
             }
         });
     });
-    fs.writeFile(
+    await fs.promises.writeFile(
         'data.json',
         JSON.stringify({
             generationDate,
@@ -253,9 +253,7 @@ export async function parse(url: string) {
             interclassGroups: Array.from(interclassGroups),
             lessons,
         }),
-        // eslint-disable-next-line @typescript-eslint/no-empty-function
         'utf8',
-        () => {},
     );
     return {
         weekdays,
