@@ -5,17 +5,11 @@
   "scripts": {
     "build": "tsc",
     "start": "node .",
-    "start:ts-node": "node --loader ts-node/esm src/index.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
-    "@timetable-api/common": "workspace:*",
-    "ajv": "^8.12.0",
-    "fs-extra": "^11.1.1"
-  },
-  "devDependencies": {
-    "@types/fs-extra": "^11.0.1"
+    "@timetable-api/common": "workspace:*"
   },
   "type": "module"
 }

@@ -1,14 +1,25 @@
-export interface RspoSchoolResponse {
+export interface Institution {
+    numerRspo: number;
     nazwa: string;
-    wojewodztwo: string;
+    typ: {
+        id: number;
+        nazwa: string
+    };
     wojewodztwoKodTERYT: string;
-    powiat: string;
+    wojewodztwo: string;
     powiatKodTERYT: string;
-    gmina: string;
+    powiat: string;
     gminaKodTERYT: string;
+    gmina: string;
     gminaRodzaj: string;
     gminaRodzajKod: string;
     miejscowosc: string;
     miejscowoscKodTERYT: string;
     geolokalizacja: { latitude: string; longitude: string };
+    stronaInternetowa: string;
+    adresDoKorespondecjiMiejscowosc: string;
+    adresDoKorespondecjiUlica: string;
+    adresDoKorespondecjiNumerBudynku: string;
+    adresDoKorespondecjiNumerLokalu: string;
+    adresDoKorespondecjiKodPocztowy: string;
 }
