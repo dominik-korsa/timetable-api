@@ -9,7 +9,9 @@
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
-    "@timetable-api/common": "workspace:*"
+    "@timetable-api/common": "workspace:*",
+    "@types/jsdom": "^21.1.1",
+    "jsdom": "^22.1.0"
   },
   "type": "module"
 }
