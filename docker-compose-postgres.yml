@@ -20,7 +20,7 @@ services:
       - traefik.http.services.timetable-push.loadbalancer.server.port=8080
 
 volumes:
-  timetable-api-pgdata
+  timetable-api-pgdata:
 
 networks:
   traefik-proxy:
