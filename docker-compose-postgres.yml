@@ -15,9 +15,9 @@ services:
       - default
     labels:
       - traefik.enable=true
-      - traefik.http.routers.timetable-push.rule=Host(`${PGADMIN_TRAEFIK_HOST}`)
-      - traefik.http.routers.timetable-push.entrypoints=https
-      - traefik.http.services.timetable-push.loadbalancer.server.port=8080
+      - traefik.http.routers.timetable-api-adminer.rule=Host(`${PGADMIN_TRAEFIK_HOST}`)
+      - traefik.http.routers.timetable-api-adminer.entrypoints=https
+      - traefik.http.services.timetable-api-adminer.loadbalancer.server.port=8080
 
 volumes:
   timetable-api-pgdata:
