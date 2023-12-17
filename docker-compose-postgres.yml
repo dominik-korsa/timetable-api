@@ -1,0 +1,28 @@
+services:
+  db:
+    image: postgres
+    restart: always
+    volumes:
+      - timetable-api-pgdata:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD
+
+  adminer:
+    image: adminer
+    restart: always
+    networks:
+      - traefik-proxy
+      - default
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.timetable-push.rule=Host(`${TRAEFIK_HOST}`)
+      - traefik.http.routers.timetable-push.entrypoints=https
+      - traefik.http.services.timetable-push.loadbalancer.server.port=8080
+
+volumes:
+  timetable-api-pgdata
+
+networks:
+  traefik-proxy:
+    external: true
+    name: traefik-proxy

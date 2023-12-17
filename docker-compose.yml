@@ -1,8 +1,0 @@
-services:
-  mongodb:
-    image: mongo
-    volumes:
-      - db:/data/db
-    restart: always
-volumes:
-  db:
