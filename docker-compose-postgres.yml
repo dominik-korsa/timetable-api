@@ -6,6 +6,8 @@ services:
       - timetable-api-pgdata:/var/lib/postgresql/data
     environment:
       - POSTGRES_PASSWORD
+    ports:
+      - 5432:5432
 
   adminer:
     image: adminer
