@@ -10,10 +10,10 @@ use crate::state::SharedState;
 #[derive(Deserialize)]
 pub(crate) struct VoivodeshipQuery {
     /// Accepted values:
-    /// 2 digit voivodeship TERYT code
-    /// 4 digit county TERYT code
-    /// 6 digit commune without type TERYT code
-    /// 7 digit commune with type TERYT code
+    /// - 2 digit voivodeship TERYT code
+    /// - 4 digit county TERYT code
+    /// - 6 digit commune without type TERYT code
+    /// - 7 digit commune with type TERYT code
     teryt: String,
 }
 
