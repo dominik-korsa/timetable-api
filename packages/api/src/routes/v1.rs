@@ -3,7 +3,9 @@ use axum::Json;
 use axum::response::IntoResponse;
 use regex_macro::regex;
 use serde::Deserialize;
-use crate::db::{get_school_by_rspo_id, get_schools_by_teryt};
+use tokio::try_join;
+use crate::db::{get_school_by_rspo_id, get_schools_by_teryt, get_versions_by_rspo_id};
+use crate::entities::SchoolWithVersions;
 use crate::error::ApiError;
 use crate::state::SharedState;
 
@@ -41,8 +43,15 @@ pub(crate) async fn get_school(
     State(state): State<SharedState>,
     Path(params): Path<SchoolParams>
 ) -> impl IntoResponse {
-    let Some(school) = get_school_by_rspo_id(&state.db_pool, params.rspo_id).await? else {
+    let (school, versions) = try_join!(
+        get_school_by_rspo_id(&state.db_pool, params.rspo_id),
+        get_versions_by_rspo_id(&state.db_pool, params.rspo_id),
+    )?;
+    let Some(school) = school else {
         return Err(ApiError::EntityNotFound)
     };
-    Ok(Json(school))
+    Ok(Json(SchoolWithVersions {
+        school,
+        optivum_versions: versions,
+    }))
 }
