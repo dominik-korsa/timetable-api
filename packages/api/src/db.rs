@@ -10,3 +10,13 @@ pub(crate) async fn get_schools_by_voivodeship(pool: &Pool<Postgres>, voivodeshi
         .fetch_all(pool)
         .await
 }
+
+pub(crate) async fn get_school_by_rspo_id(pool: &Pool<Postgres>, rspo_id: i32) -> sqlx::Result<Option<School>> {
+    sqlx::query_as!(
+        School,
+        r#"SELECT "name", "rspo_id" FROM "schools" WHERE rspo_id = $1"#,
+        rspo_id,
+    )
+        .fetch_optional(pool)
+        .await
+}

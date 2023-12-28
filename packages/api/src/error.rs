@@ -7,6 +7,7 @@ type Result<T> = std::result::Result<T, ApiError>;
 pub(crate) enum ApiError {
     DbError,
     UnknownVoivodeship,
+    EntityNotFound,
 }
 
 impl IntoResponse for ApiError {
@@ -14,12 +15,13 @@ impl IntoResponse for ApiError {
         match self {
             ApiError::DbError => (StatusCode::INTERNAL_SERVER_ERROR, "Unexpected database error"),
             ApiError::UnknownVoivodeship => (StatusCode::BAD_REQUEST, "Invalid voivodeship TERYT code"),
+            ApiError::EntityNotFound => (StatusCode::NOT_FOUND, "Entity not found"),
         }.into_response()
     }
 }
 
 impl From<sqlx::Error> for ApiError {
-    fn from(_value: sqlx::Error) -> Self {
+    fn from(_: sqlx::Error) -> Self {
         ApiError::DbError
     }
 }
