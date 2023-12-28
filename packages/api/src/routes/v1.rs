@@ -1,27 +1,34 @@
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::Json;
 use axum::response::IntoResponse;
-use phf::{phf_set, Set};
+use regex_macro::regex;
 use serde::Deserialize;
-use crate::db::{get_school_by_rspo_id, get_schools_by_voivodeship};
+use crate::db::{get_school_by_rspo_id, get_schools_by_teryt};
 use crate::error::ApiError;
 use crate::state::SharedState;
 
-const VALID_VOIVODESHIPS: Set<&str> = phf_set!{ "02", "04", "06", "08", "10", "12", "14", "16", "18", "20", "22", "24", "26", "28", "30", "32" };
-
 #[derive(Deserialize)]
-pub(crate) struct VoivodeshipParams {
-    voivodeship: String,
+pub(crate) struct VoivodeshipQuery {
+    /// Accepted values:
+    /// 2 digit voivodeship TERYT code
+    /// 4 digit county TERYT code
+    /// 6 digit commune without type TERYT code
+    /// 7 digit commune with type TERYT code
+    teryt: String,
 }
 
-pub(crate) async fn list_schools_by_voivodeship(
+fn validate_teryt(teryt: &str) -> bool {
+    regex!(r#"^\d{2}(?:\d{2}(?:\d{2}\d?)?)?$"#).is_match(teryt)
+}
+
+pub(crate) async fn list_schools(
     State(state): State<SharedState>,
-    Path(params): Path<VoivodeshipParams>
+    Query(params): Query<VoivodeshipQuery>
 ) -> impl IntoResponse {
-    if !VALID_VOIVODESHIPS.contains(&params.voivodeship) {
-        return Err(ApiError::UnknownVoivodeship);
+    if !validate_teryt(&params.teryt) {
+        return Err(ApiError::InvalidTerytCode);
     }
-    let schools = get_schools_by_voivodeship(&state.db_pool, &params.voivodeship).await?;
+    let schools = get_schools_by_teryt(&state.db_pool, &params.teryt).await?;
     Ok(Json(schools))
 }
 
