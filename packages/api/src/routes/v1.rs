@@ -18,7 +18,7 @@ pub(crate) struct VoivodeshipQuery {
 }
 
 fn validate_teryt(teryt: &str) -> bool {
-    regex!(r#"^\d{2}(?:\d{2}(?:\d{2}\d?)?)?$"#).is_match(teryt)
+    regex!(r#"^(?:02|04|06|08|10|12|14|16|18|20|22|24|26|28|30|32)(?:\d{2}(?:\d{2}\d?)?)?$"#).is_match(teryt)
 }
 
 pub(crate) async fn list_schools(
