@@ -1,10 +1,11 @@
 use axum::extract::{Path, Query, State};
 use axum::Json;
 use axum::response::IntoResponse;
+use chrono::NaiveDate;
 use regex_macro::regex;
 use serde::Deserialize;
 use tokio::try_join;
-use crate::db::{get_school_by_rspo_id, get_schools_by_teryt, get_versions_by_rspo_id};
+use crate::db::{get_school_by_rspo_id, get_schools_by_teryt, get_version_data, get_versions_by_rspo_id};
 use crate::entities::SchoolWithVersions;
 use crate::error::ApiError;
 use crate::state::SharedState;
@@ -54,4 +55,27 @@ pub(crate) async fn get_school(
         school,
         optivum_versions: versions,
     }))
+}
+
+
+#[derive(Deserialize)]
+pub(crate) struct OptivumVersionParams {
+    rspo_id: i32,
+    generated_on: NaiveDate,
+    discriminant: i16,
+}
+pub(crate) async fn get_optivum_version_data(
+    State(state): State<SharedState>,
+    Path(params): Path<OptivumVersionParams>
+) -> impl IntoResponse {
+    let timetable_data = get_version_data(
+        &state.db_pool,
+        params.rspo_id,
+        params.generated_on,
+        params.discriminant,
+    ).await?;
+    let Some(timetable_data) = timetable_data else {
+        return Err(ApiError::EntityNotFound)
+    };
+    Ok(timetable_data)
 }
