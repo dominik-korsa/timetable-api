@@ -8,6 +8,7 @@ pub(crate) enum ApiError {
     DbError,
     InvalidTerytCode,
     EntityNotFound,
+    RouteNotFound,
 }
 
 impl IntoResponse for ApiError {
@@ -16,6 +17,7 @@ impl IntoResponse for ApiError {
             ApiError::DbError => (StatusCode::INTERNAL_SERVER_ERROR, "Unexpected database error"),
             ApiError::InvalidTerytCode => (StatusCode::BAD_REQUEST, "Invalid TERYT code"),
             ApiError::EntityNotFound => (StatusCode::NOT_FOUND, "Entity not found"),
+            ApiError::RouteNotFound => (StatusCode::NOT_FOUND, "Route not found"),
         }.into_response()
     }
 }
