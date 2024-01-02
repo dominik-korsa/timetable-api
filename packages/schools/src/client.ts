@@ -1,90 +1,82 @@
 import { RspoApiClient } from './rspo/client.js';
-import { checkTimetablePage, findLinksByKeywords } from './utils.js';
-import { School } from './types.js';
-import { Institution as RspoApiInstitution } from './rspo/types.js';
-import fs from 'fs';
-import { AxiosInstance } from 'axios';
-import { JSDOM } from 'jsdom';
+import { Institution } from './rspo/types.js';
+import knex from 'knex';
+import dotenv from 'dotenv';
 
-export async function getSchools(institutionTypeIds: number[]): Promise<School[]> {
+dotenv.config();
+
+const dbClient = knex({
+    client: 'pg',
+    version: '7.2',
+    connection: {
+        user: process.env.DB_USER,
+        host: process.env.DB_HOST,
+        database: process.env.DB_NAME,
+        password: process.env.DB_PASSWORD,
+        port: Number(process.env.DB_PORT),
+    },
+    useNullAsDefault: true,
+});
+
+export async function run(institutionTypeIds: number[]): Promise<void> {
     const rspoClient = new RspoApiClient();
-    let data: RspoApiInstitution[] = [];
-    console.log('Fetching data...');
     await Promise.all(
         institutionTypeIds.map(async (institutionTypeId: number) => {
             let page = 1;
             // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition, no-constant-condition
             while (true) {
-                const response = await rspoClient.getInstitutions({
-                    institutionTypeId,
-                    includeLiquidated: false,
-                    page,
-                });
-                data = data.concat(response);
-                console.log(`${page} page has been successfully fetched`);
-                if (response.length === 100) {
-                    page++;
-                } else {
+                console.log(`[Institution type: ${institutionTypeId}, page: ${page}] Fetching data from Rspo API...`);
+                let data: Institution[] | undefined;
+                try {
+                    data = await rspoClient.getInstitutions({
+                        institutionTypeId,
+                        includeLiquidated: false,
+                        page,
+                    });
+                } catch {
+                    console.log('Error');
+                    continue;
+                }
+                console.log(
+                    `[Institution type: ${institutionTypeId}, page: ${page}] Parsing and pushing data to database...`,
+                );
+                await dbClient('schools')
+                    .insert(
+                        data.map((school) => ({
+                            rspo_id: school.numerRspo,
+                            name: school.nazwa,
+                            generated_on: dbClient.fn.now(),
+                            voivodeship_teryt: school.wojewodztwoKodTERYT,
+                            commune_teryt: school.gminaKodTERYT,
+                            county_teryt: school.powiatKodTERYT,
+                            geo_lat: school.geolokalizacja.latitude,
+                            geo_long: school.geolokalizacja.longitude,
+                            corresp_addr_town: school.adresDoKorespondecjiMiejscowosc,
+                            corresp_addr_street: school.adresDoKorespondecjiUlica,
+                            corresp_addr_building_nr: school.adresDoKorespondecjiNumerBudynku,
+                            corresp_addr_apartament_nr: school.adresDoKorespondecjiNumerLokalu,
+                            corresp_addr_zip_code: school.adresDoKorespondecjiKodPocztowy,
+                            website_url:
+                                school.stronaInternetowa !== '' &&
+                                /(^https?:\/\/)?((?:[a-z0-9-]+\.)+[a-z][a-z0-9-]*)(:\d{1,5})?(\/.*)?$/m.test(
+                                    school.stronaInternetowa,
+                                )
+                                    ? fixUrl(school.stronaInternetowa)
+                                    : null,
+                            institution_type: school.typ.id,
+                        })),
+                    )
+                    .onConflict('rspo_id')
+                    .merge();
+                if (data.length !== 100) {
                     break;
                 }
+                page++;
             }
         }),
     );
-    console.log('Parsing data...');
-    const schools = data.map((school) => ({
-        rspoId: school.numerRspo,
-        name: school.nazwa,
-        schoolTypeId: school.typ.id,
-        voivodeshipTERYT: school.wojewodztwoKodTERYT,
-        communeTERYT: school.gminaKodTERYT,
-        countyTERYT: school.powiatKodTERYT,
-        townTERYT: school.miejscowoscKodTERYT,
-        geolocation: {
-            latitude: school.geolokalizacja.latitude,
-            longitude: school.geolokalizacja.longitude,
-        },
-        correspondenceAddress: {
-            town: school.adresDoKorespondecjiMiejscowosc,
-            street: school.adresDoKorespondecjiUlica,
-            buildingNumber: school.adresDoKorespondecjiNumerBudynku,
-            apartamentNumber: school.adresDoKorespondecjiNumerLokalu,
-            zipCode: school.adresDoKorespondecjiKodPocztowy,
-        },
-        website: school.stronaInternetowa,
-    }));
-    await fs.promises.writeFile('data.json', JSON.stringify(schools), 'utf8');
-    console.log('The data has been saved as data.json');
-    return schools;
+    console.log('Done!');
 }
 
-export async function checkSchoolWebsite(
-    depthLimit: number,
-    url: string,
-    axios: AxiosInstance,
-    checkedLinks: string[] = [],
-) {
-    const timetables: { url: string; type: 'optivum' | 'asctimetables' }[] = [];
-    const response = await axios.get<string>(url.replace('www.', ''));
-    checkedLinks.push(url);
-    const document = new JSDOM(response.data).window.document;
-    const links = [
-        ...new Set(
-            findLinksByKeywords(document).map((link) =>
-                new URL(link, url.replace('www.', '')).toString(),
-            ),
-        ),
-    ];
-    if (depthLimit > 0) {
-        await Promise.all(
-            links.map(async (link) => {
-                if (checkedLinks.includes(link)) return;
-                checkedLinks.push(link);
-                const result = await checkSchoolWebsite(depthLimit - 2, link, axios, checkedLinks);
-                timetables.push(...result.timetables);
-            })
-        );
-    };
-    const timetableType = checkTimetablePage(window.document);
-    if (timetableType !== undefined) timetables.push({ url, type: timetableType });
-    return { url: url.replace('www.', ''), timetables: [...new Set(timetables)] };
-}
+export const fixUrl = (url: string) =>
+    !url.includes('://') ? 'http://' + url.replace('www.', '') : url.replace('www.', '');
