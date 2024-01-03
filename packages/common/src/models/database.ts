@@ -1,4 +1,4 @@
-export interface SchoolColumn {
+export interface SchoolsTable {
     rspo_id: number;
     name: string;
     generated_on: Date | null;
@@ -16,7 +16,7 @@ export interface SchoolColumn {
     institution_type: number;
 }
 
-export interface OptivumTimetableVersionColumn {
+export interface OptivumTimetableVersionsTable {
     unique_id: number;
     school_rspo_id: number;
     generated_on: string;
@@ -25,7 +25,7 @@ export interface OptivumTimetableVersionColumn {
     hash: string;
 }
 
-export interface TimetableUrlColumn {
+export interface TimetableUrlsTable {
     id: number;
     school_rspo_id: number;
     timetable_version_id: number;
