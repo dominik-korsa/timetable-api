@@ -1,4 +1,2 @@
-export * from './common.js';
-export * from './school.js';
-export * from './timetable.js';
-export * from './redis/timetable-version.js';
+export * from './optivum_timetable_version.js';
+export * from './database.js';
