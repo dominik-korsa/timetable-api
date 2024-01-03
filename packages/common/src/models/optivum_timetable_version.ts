@@ -82,8 +82,8 @@ export interface TimetableVersion {
     data: {
         common: TimetableVersionCommon;
         lessons: TimetableLesson[];
-        validationDate: Date;
-        generationDate: Date;
+        validFrom: string;
+        generationDate: string;
     }
     htmls: string[];
 }
