@@ -11,8 +11,11 @@ export class RspoApiClient {
         institutionTypeId: number | undefined;
         includeLiquidated: boolean | undefined;
         page: number | undefined;
-    }): Promise<Institution[]> {
-        const response = await this.axios.get<Institution[]>(`${this.rspoBaseUrl}/placowki`, {
+    }): Promise<{ data: Institution[]; nextPageAvalible: boolean }> {
+        const response = await this.axios.get<{
+            'hydra:member': Institution[];
+            'hydra:view': { 'hydra:next': string | undefined };
+        }>(`${this.rspoBaseUrl}/placowki`, {
             params: {
                 typ_podmiotu_id: params.institutionTypeId,
                 zlikwidowana: params.includeLiquidated,
@@ -20,10 +23,13 @@ export class RspoApiClient {
             },
             headers: {
                 'User-Agent': this.userAgent,
-                Accept: 'application/json',
+                Accept: 'application/ld+json',
             },
         });
-        return response.data;
+        return {
+            data: response.data['hydra:member'],
+            nextPageAvalible: response.data['hydra:view']['hydra:next'] !== undefined,
+        };
     }
 
     async getSchoolInfo(rspoId: number): Promise<Institution> {

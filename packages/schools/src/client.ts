@@ -27,12 +27,13 @@ export async function run(institutionTypeIds: number[]): Promise<void> {
             while (true) {
                 console.log(`[Institution type: ${institutionTypeId}, page: ${page}] Fetching data from Rspo API...`);
                 let data: Institution[] | undefined;
+                let nextPageAvalible: boolean | undefined;
                 try {
-                    data = await rspoClient.getInstitutions({
+                    ({ data, nextPageAvalible } = await rspoClient.getInstitutions({
                         institutionTypeId,
                         includeLiquidated: false,
                         page,
-                    });
+                    }));
                 } catch {
                     console.log('Error');
                     continue;
@@ -56,19 +57,13 @@ export async function run(institutionTypeIds: number[]): Promise<void> {
                             corresp_addr_building_nr: school.adresDoKorespondecjiNumerBudynku,
                             corresp_addr_apartament_nr: school.adresDoKorespondecjiNumerLokalu,
                             corresp_addr_zip_code: school.adresDoKorespondecjiKodPocztowy,
-                            website_url:
-                                school.stronaInternetowa !== '' &&
-                                /(^https?:\/\/)?((?:[a-z0-9-]+\.)+[a-z][a-z0-9-]*)(:\d{1,5})?(\/.*)?$/m.test(
-                                    school.stronaInternetowa,
-                                )
-                                    ? fixUrl(school.stronaInternetowa)
-                                    : null,
+                            website_url: checkUrl(school.stronaInternetowa),
                             institution_type: school.typ.id,
                         })),
                     )
                     .onConflict('rspo_id')
                     .merge();
-                if (data.length !== 100) {
+                if (!nextPageAvalible) {
                     break;
                 }
                 page++;
@@ -78,5 +73,9 @@ export async function run(institutionTypeIds: number[]): Promise<void> {
     console.log('Done!');
 }
 
-export const fixUrl = (url: string) =>
-    !url.includes('://') ? 'http://' + url.replace('www.', '') : url.replace('www.', '');
+function checkUrl(url: string) {
+    if (url === '' || /(^https?:\/\/)?((?:[a-z0-9-]+\.)+[a-z][a-z0-9-]*)(:\d{1,5})?(\/.*)?$/m.test(url)) {
+        return null;
+    }
+    return url.includes('://') ? 'http://' + url.replace('www.', '') : url.replace('www.', '');
+}
