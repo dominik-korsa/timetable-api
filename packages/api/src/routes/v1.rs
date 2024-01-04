@@ -1,14 +1,12 @@
 use axum::extract::{Path, Query, State};
 use axum::Json;
 use axum::response::IntoResponse;
-use chrono::NaiveDate;
 use regex_macro::regex;
 use serde::Deserialize;
 use tokio::try_join;
-use crate::db::{get_school_by_rspo_id, get_schools_by_teryt, get_version_data, get_versions_by_rspo_id};
+use crate::db::Db;
 use crate::entities::SchoolWithVersions;
 use crate::error::ApiError;
-use crate::state::SharedState;
 
 #[derive(Deserialize)]
 pub(crate) struct VoivodeshipQuery {
@@ -25,13 +23,13 @@ fn validate_teryt(teryt: &str) -> bool {
 }
 
 pub(crate) async fn list_schools(
-    State(state): State<SharedState>,
+    State(db): State<Db>,
     Query(params): Query<VoivodeshipQuery>
 ) -> impl IntoResponse {
     if !validate_teryt(&params.teryt) {
         return Err(ApiError::InvalidTerytCode);
     }
-    let schools = get_schools_by_teryt(&state.db_pool, &params.teryt).await?;
+    let schools = db.get_schools_by_teryt(&params.teryt).await?;
     Ok(Json(schools))
 }
 
@@ -41,12 +39,12 @@ pub(crate) struct SchoolParams {
 }
 
 pub(crate) async fn get_school(
-    State(state): State<SharedState>,
+    State(db): State<Db>,
     Path(params): Path<SchoolParams>
 ) -> impl IntoResponse {
     let (school, versions) = try_join!(
-        get_school_by_rspo_id(&state.db_pool, params.rspo_id),
-        get_versions_by_rspo_id(&state.db_pool, params.rspo_id),
+        db.get_school_by_rspo_id(params.rspo_id),
+        db.get_versions_by_rspo_id(params.rspo_id),
     )?;
     let Some(school) = school else {
         return Err(ApiError::EntityNotFound)
@@ -61,15 +59,14 @@ pub(crate) async fn get_school(
 #[derive(Deserialize)]
 pub(crate) struct OptivumVersionParams {
     rspo_id: i32,
-    generated_on: NaiveDate,
+    generated_on: /* NaiveDate */ String,
     discriminant: i16,
 }
 pub(crate) async fn get_optivum_version_data(
-    State(state): State<SharedState>,
+    State(db): State<Db>,
     Path(params): Path<OptivumVersionParams>
 ) -> impl IntoResponse {
-    let timetable_data = get_version_data(
-        &state.db_pool,
+    let timetable_data = db.get_version_data(
         params.rspo_id,
         params.generated_on,
         params.discriminant,

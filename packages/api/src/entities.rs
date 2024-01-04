@@ -1,6 +1,4 @@
-use chrono::NaiveDate;
 use serde::Serialize;
-use sqlx::types::chrono::{DateTime, Utc};
 
 #[derive(Serialize)]
 pub(crate) struct School {
@@ -18,8 +16,6 @@ pub(crate) struct SchoolWithVersions {
 
 #[derive(Serialize)]
 pub(crate) struct OptivumTimetableVersion {
-    pub(crate) original_url: String,
-    pub(crate) generated_on: NaiveDate,
+    pub(crate) generated_on: /* NaiveDate */ String,
     pub(crate) discriminant: i16,
-    pub(crate) found_on: DateTime<Utc>,
 }
