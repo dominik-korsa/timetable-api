@@ -4,12 +4,12 @@ mod entities;
 mod error;
 
 use std::env;
-use axum::{routing::get, Router};
+use axum::Router;
 use axum::response::IntoResponse;
 use dotenvy::dotenv;
 use crate::db::Db;
 use crate::error::ApiError;
-use crate::routes::v1::{get_optivum_version_data, get_school, list_schools};
+use crate::routes::schools::create_schools_router;
 
 async fn handle_fallback() -> impl IntoResponse {
     ApiError::RouteNotFound
@@ -24,9 +24,7 @@ async fn main() {
     ).await.unwrap();
 
     let app = Router::new()
-        .route("/v1/schools", get(list_schools))
-        .route("/v1/schools/:rspo_id", get(get_school))
-        .route("/v1/schools/:rspo_id/optivum-versions/:generated_on/:discriminant", get(get_optivum_version_data))
+        .merge(create_schools_router())
         .fallback(handle_fallback)
         .with_state(db);
 

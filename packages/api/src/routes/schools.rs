@@ -1,6 +1,7 @@
 use axum::extract::{Path, Query, State};
-use axum::Json;
+use axum::{Json, Router};
 use axum::response::IntoResponse;
+use axum::routing::get;
 use regex_macro::regex;
 use serde::Deserialize;
 use tokio::try_join;
@@ -8,8 +9,16 @@ use crate::db::Db;
 use crate::entities::SchoolWithVersions;
 use crate::error::ApiError;
 
+
+pub(crate) fn create_schools_router() -> Router<Db> {
+    Router::new()
+        .route("/v1/schools", get(list_schools))
+        .route("/v1/schools/:rspo_id", get(get_school))
+        .route("/v1/schools/:rspo_id/optivum-versions/:generated_on/:discriminant", get(get_optivum_version_data))
+}
+
 #[derive(Deserialize)]
-pub(crate) struct VoivodeshipQuery {
+struct VoivodeshipQuery {
     /// Accepted values:
     /// - 2 digit voivodeship TERYT code
     /// - 4 digit county TERYT code
@@ -22,7 +31,7 @@ fn validate_teryt(teryt: &str) -> bool {
     regex!(r#"^(?:02|04|06|08|10|12|14|16|18|20|22|24|26|28|30|32)(?:\d{2}(?:\d{2}\d?)?)?$"#).is_match(teryt)
 }
 
-pub(crate) async fn list_schools(
+async fn list_schools(
     State(db): State<Db>,
     Query(params): Query<VoivodeshipQuery>
 ) -> impl IntoResponse {
@@ -34,11 +43,11 @@ pub(crate) async fn list_schools(
 }
 
 #[derive(Deserialize)]
-pub(crate) struct SchoolParams {
+struct SchoolParams {
     rspo_id: i32
 }
 
-pub(crate) async fn get_school(
+async fn get_school(
     State(db): State<Db>,
     Path(params): Path<SchoolParams>
 ) -> impl IntoResponse {
@@ -57,12 +66,12 @@ pub(crate) async fn get_school(
 
 
 #[derive(Deserialize)]
-pub(crate) struct OptivumVersionParams {
+struct OptivumVersionParams {
     rspo_id: i32,
     generated_on: /* NaiveDate */ String,
     discriminant: i16,
 }
-pub(crate) async fn get_optivum_version_data(
+async fn get_optivum_version_data(
     State(db): State<Db>,
     Path(params): Path<OptivumVersionParams>
 ) -> impl IntoResponse {
