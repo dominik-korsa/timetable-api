@@ -1,6 +1,6 @@
 use axum::http::StatusCode;
-use axum::Json;
 use axum::response::{IntoResponse, Response};
+use axum::Json;
 use serde::Serialize;
 
 pub(crate) type Result<T> = std::result::Result<T, ApiError>;
@@ -41,7 +41,7 @@ struct ApiErrorResponse {
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         let response = ApiErrorResponse {
-            message: self.get_message()
+            message: self.get_message(),
         };
         (self.get_status_code(), Json(response)).into_response()
     }

@@ -16,6 +16,7 @@ pub(crate) struct SchoolWithVersions {
 
 #[derive(Serialize)]
 pub(crate) struct OptivumTimetableVersion {
-    pub(crate) generated_on: /* NaiveDate */ String,
+    // pub(crate) generated_on: NaiveDate,
+    pub(crate) generated_on: String,
     pub(crate) discriminant: i16,
 }

@@ -1,11 +1,11 @@
-use std::net::SocketAddr;
-use email_address::EmailAddress;
-use sqlx::{Error, Pool, Postgres};
-use sqlx::postgres::PgPoolOptions;
-use sqlx::types::ipnetwork::IpNetwork;
 use crate::entities::{OptivumTimetableVersion, School};
 use crate::error;
 use crate::error::ApiError;
+use email_address::EmailAddress;
+use sqlx::postgres::PgPoolOptions;
+use sqlx::types::ipnetwork::IpNetwork;
+use sqlx::{Error, Pool, Postgres};
+use std::net::SocketAddr;
 
 #[derive(Clone)]
 pub(crate) struct Db {
@@ -14,9 +14,7 @@ pub(crate) struct Db {
 
 impl Db {
     pub(crate) async fn new(url: &str) -> sqlx::Result<Self> {
-        let pool = PgPoolOptions::new()
-            .max_connections(5)
-            .connect(url).await?;
+        let pool = PgPoolOptions::new().max_connections(5).connect(url).await?;
         Ok(Db { pool })
     }
 
@@ -29,8 +27,8 @@ impl Db {
                 ORDER BY "commune_teryt", "rspo_id""#,
             format!("{}%", teryt),
         )
-            .fetch_all(&self.pool)
-            .await
+        .fetch_all(&self.pool)
+        .await
     }
 
     pub(crate) async fn get_school_by_rspo_id(&self, rspo_id: i32) -> sqlx::Result<Option<School>> {
@@ -40,8 +38,8 @@ impl Db {
                 WHERE rspo_id = $1"#,
             rspo_id,
         )
-            .fetch_optional(&self.pool)
-            .await
+        .fetch_optional(&self.pool)
+        .await
     }
 
     pub(crate) async fn get_versions_by_rspo_id(
@@ -55,14 +53,15 @@ impl Db {
                 ORDER BY generated_on, discriminant"#,
             rspo_id,
         )
-            .fetch_all(&self.pool)
-            .await
+        .fetch_all(&self.pool)
+        .await
     }
 
     pub(crate) async fn get_version_data(
         &self,
         rspo_id: i32,
-        generated_on: /* NaiveDate */ String,
+        // generated_on: NaiveDate,
+        generated_on: String,
         discriminant: i16,
     ) -> sqlx::Result<Option<String>> {
         let timetable_data = sqlx::query!(
@@ -72,9 +71,9 @@ impl Db {
             generated_on,
             discriminant,
         )
-            .fetch_optional(&self.pool)
-            .await?
-            .map(|result| result.timetable_data);
+        .fetch_optional(&self.pool)
+        .await?
+        .map(|result| result.timetable_data);
         Ok(timetable_data)
     }
 
@@ -98,10 +97,8 @@ impl Db {
             Ok(_) => Ok(()),
             Err(Error::Database(error)) if error.is_foreign_key_violation() => {
                 Err(ApiError::EntityNotFound)
-            },
-            Err(error) => {
-                Err(ApiError::from(error))
-            },
+            }
+            Err(error) => Err(ApiError::from(error)),
         }
     }
 }
