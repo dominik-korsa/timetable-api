@@ -1,23 +1,23 @@
 export interface TimetableClass {
     id: string;
    /**
-    * The level (grade) of the class without a code, usually a number from 0 to 8.
+    * The level (grade) of the class without a code, usually a number from 0 to 8, e. g. 1.
     */
     level: string | null;
    /**
-    * The short symbol representing the class, usually a letter.
+    * The short symbol representing the class, usually a letter, e. g. A.
     */
     order: string | null;
    /**
-    * The combination of level and order.
+    * The combination of level and order, e. g. 1A.
     */
     code: string | null;
    /**
-    * The extended name of the class.
+    * The extended name of the class, e. g. 1 mat.
     */
     longOrder: string | null;
    /**
-    * The combination of code and longOrder.
+    * The combination of code and longOrder, e. g. 1A 1 mat.
     */
     fullName: string | null;
     slugs: string[];
