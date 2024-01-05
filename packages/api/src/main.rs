@@ -1,3 +1,5 @@
+#![warn(clippy::pedantic)]
+
 mod routes;
 mod db;
 mod entities;
@@ -12,6 +14,7 @@ use crate::db::Db;
 use crate::error::ApiError;
 use crate::routes::schools::create_schools_router;
 
+#[allow(clippy::unused_async)]
 async fn handle_fallback() -> impl IntoResponse {
     ApiError::RouteNotFound
 }
