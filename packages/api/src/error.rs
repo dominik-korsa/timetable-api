@@ -3,7 +3,7 @@ use axum::Json;
 use axum::response::{IntoResponse, Response};
 use serde::Serialize;
 
-type Result<T> = std::result::Result<T, ApiError>;
+pub(crate) type Result<T> = std::result::Result<T, ApiError>;
 
 #[derive(Clone)]
 pub(crate) enum ApiError {

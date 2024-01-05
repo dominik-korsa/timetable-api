@@ -1,12 +1,15 @@
-use axum::extract::{Path, Query, State};
-use axum::{Json, Router};
+use std::net::SocketAddr;
+use axum::extract::{ConnectInfo, Json, Path, Query, State};
+use axum::Router;
+use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::routing::get;
+use axum::routing::{get, post};
 use regex_macro::regex;
 use serde::Deserialize;
 use tokio::try_join;
 use crate::db::Db;
 use crate::entities::SchoolWithVersions;
+use crate::error;
 use crate::error::ApiError;
 
 
@@ -15,6 +18,7 @@ pub(crate) fn create_schools_router() -> Router<Db> {
         .route("/v1/schools", get(list_schools))
         .route("/v1/schools/:rspo_id", get(get_school))
         .route("/v1/schools/:rspo_id/optivum-versions/:generated_on/:discriminant", get(get_optivum_version_data))
+        .route("/v1/schools/:rspo_id/submit-url", post(submit_url))
 }
 
 #[derive(Deserialize)]
@@ -84,4 +88,20 @@ async fn get_optivum_version_data(
         return Err(ApiError::EntityNotFound)
     };
     Ok(timetable_data)
+}
+
+#[derive(Deserialize)]
+struct SubmitUrlBody {
+    url: String,
+}
+
+async fn submit_url(
+    State(db): State<Db>,
+    Path(params): Path<SchoolParams>,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    Json(body): Json<SubmitUrlBody>,
+) -> error::Result<StatusCode> {
+    // TODO: Add Captcha verification
+    db.submit_url(params.rspo_id, body.url, addr).await?;
+    Ok(StatusCode::CREATED)
 }

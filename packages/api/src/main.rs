@@ -4,6 +4,7 @@ mod entities;
 mod error;
 
 use std::env;
+use std::net::SocketAddr;
 use axum::Router;
 use axum::response::IntoResponse;
 use dotenvy::dotenv;
@@ -26,7 +27,8 @@ async fn main() {
     let app = Router::new()
         .merge(create_schools_router())
         .fallback(handle_fallback)
-        .with_state(db);
+        .with_state(db)
+        .into_make_service_with_connect_info::<SocketAddr>();
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
     axum::serve(listener, app).await.unwrap();

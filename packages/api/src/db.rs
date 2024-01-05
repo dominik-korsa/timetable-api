@@ -1,5 +1,7 @@
+use std::net::SocketAddr;
 use sqlx::{Pool, Postgres};
 use sqlx::postgres::PgPoolOptions;
+use sqlx::types::ipnetwork::IpNetwork;
 use crate::entities::{OptivumTimetableVersion, School};
 
 #[derive(Clone)]
@@ -73,5 +75,22 @@ impl Db {
             .await?
             .map(|result| result.timetable_data);
         Ok(timetable_data)
+    }
+
+    pub(crate) async fn submit_url(
+        &self,
+        rspo_id: i32,
+        url: String,
+        ip_addr: SocketAddr,
+    ) -> sqlx::Result<()> {
+        sqlx::query!(
+            r#"INSERT INTO "url_form" (url, rspo_id, ip_address) VALUES ($1, $2, $3)"#,
+            url,
+            rspo_id,
+            IpNetwork::from(ip_addr.ip()),
+        )
+            .execute(&self.pool)
+            .await?;
+        Ok(())
     }
 }
