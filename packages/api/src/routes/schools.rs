@@ -103,7 +103,6 @@ async fn submit_url(
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     Json(body): Json<SubmitUrlBody>,
 ) -> error::Result<StatusCode> {
-    // TODO: Add Captcha verification
     db.submit_url(params.rspo_id, body.url, body.email_address, addr).await?;
     Ok(StatusCode::CREATED)
 }
