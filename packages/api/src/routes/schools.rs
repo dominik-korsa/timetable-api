@@ -4,6 +4,7 @@ use axum::Router;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
+use email_address::EmailAddress;
 use regex_macro::regex;
 use serde::Deserialize;
 use tokio::try_join;
@@ -93,6 +94,7 @@ async fn get_optivum_version_data(
 #[derive(Deserialize)]
 struct SubmitUrlBody {
     url: String,
+    email_address: Option<EmailAddress>,
 }
 
 async fn submit_url(
@@ -102,6 +104,6 @@ async fn submit_url(
     Json(body): Json<SubmitUrlBody>,
 ) -> error::Result<StatusCode> {
     // TODO: Add Captcha verification
-    db.submit_url(params.rspo_id, body.url, addr).await?;
+    db.submit_url(params.rspo_id, body.url, body.email_address, addr).await?;
     Ok(StatusCode::CREATED)
 }

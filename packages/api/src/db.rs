@@ -1,4 +1,5 @@
 use std::net::SocketAddr;
+use email_address::EmailAddress;
 use sqlx::{Pool, Postgres};
 use sqlx::postgres::PgPoolOptions;
 use sqlx::types::ipnetwork::IpNetwork;
@@ -81,12 +82,14 @@ impl Db {
         &self,
         rspo_id: i32,
         url: String,
+        email_address: Option<EmailAddress>,
         ip_addr: SocketAddr,
     ) -> sqlx::Result<()> {
         sqlx::query!(
-            r#"INSERT INTO "url_form" (url, rspo_id, ip_address) VALUES ($1, $2, $3)"#,
-            url,
+            r#"INSERT INTO "url_form" (rspo_id, url, email_address, ip_address) VALUES ($1, $2, $3, $4)"#,
             rspo_id,
+            url,
+            email_address.map(|email| email.to_string()),
             IpNetwork::from(ip_addr.ip()),
         )
             .execute(&self.pool)

@@ -14,3 +14,4 @@ dotenvy = "0.15.7"
 regex = "1.10.2"
 regex-macro = "0.2.0"
 chrono = { version = "0.4.31", features = ["serde"] }
+email_address = "0.2.4"
