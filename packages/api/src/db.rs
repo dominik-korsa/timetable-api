@@ -1,7 +1,6 @@
 use crate::entities::{OptivumTimetableVersion, School};
 use crate::error;
 use crate::error::ApiError;
-use email_address::EmailAddress;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::types::ipnetwork::IpNetwork;
 use sqlx::{Error, Pool, Postgres};
@@ -19,7 +18,6 @@ impl Db {
     }
 
     pub(crate) async fn get_schools_by_teryt(&self, teryt: &str) -> sqlx::Result<Vec<School>> {
-        assert!(!teryt.is_empty(), "TERYT should not be empty");
         sqlx::query_as!(
             School,
             r#"SELECT "name", "rspo_id", "commune_teryt" as "teryt" FROM "schools"
@@ -81,14 +79,14 @@ impl Db {
         &self,
         rspo_id: i32,
         url: String,
-        email_address: Option<EmailAddress>,
+        email_address: Option<String>,
         ip_addr: SocketAddr,
     ) -> error::Result<()> {
         let result = sqlx::query!(
             r#"INSERT INTO "url_form" (rspo_id, url, email_address, ip_address) VALUES ($1, $2, $3, $4)"#,
             rspo_id,
             url,
-            email_address.map(|email| email.to_string()),
+            email_address,
             IpNetwork::from(ip_addr.ip()),
         )
             .execute(&self.pool)

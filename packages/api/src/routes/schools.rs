@@ -1,36 +1,34 @@
 use crate::db::Db;
 use crate::entities::SchoolWithVersions;
-use crate::error;
 use crate::error::ApiError;
-use axum::extract::{ConnectInfo, Json, Path, Query, State};
+use aide::axum::routing::{get, post};
+use aide::axum::{ApiRouter, IntoApiResponse};
+use axum::extract::{ConnectInfo, Path, Query, State};
 use axum::http::StatusCode;
-use axum::response::IntoResponse;
-use axum::routing::{get, post};
-use axum::Router;
+use axum_jsonschema::Json;
 use email_address::EmailAddress;
 use regex_macro::regex;
+use schemars::JsonSchema;
 use serde::Deserialize;
+use serde_json::value::RawValue;
 use std::net::SocketAddr;
 use tokio::try_join;
 
-pub(crate) fn create_schools_router() -> Router<Db> {
-    Router::new()
-        .route("/v1/schools", get(list_schools))
-        .route("/v1/schools/:rspo_id", get(get_school))
-        .route(
+pub(crate) fn create_schools_router() -> ApiRouter<Db> {
+    ApiRouter::new()
+        .api_route("/v1/schools", get(list_schools))
+        .api_route("/v1/schools/:rspo_id", get(get_school))
+        .api_route(
             "/v1/schools/:rspo_id/optivum-versions/:generated_on/:discriminant",
             get(get_optivum_version_data),
         )
-        .route("/v1/schools/:rspo_id/submit-url", post(submit_url))
+        .api_route("/v1/schools/:rspo_id/submit-url", post(submit_url))
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, JsonSchema)]
 struct VoivodeshipQuery {
-    /// Accepted values:
-    /// - 2 digit voivodeship TERYT code
-    /// - 4 digit county TERYT code
-    /// - 6 digit commune without type TERYT code
-    /// - 7 digit commune with type TERYT code
+    /// TERYT code of the school location:
+    /// voivodeship (2 digits) / county (4 digits) / commune with optional type (6-7 digits)
     teryt: String,
 }
 
@@ -42,7 +40,7 @@ fn validate_teryt(teryt: &str) -> bool {
 async fn list_schools(
     State(db): State<Db>,
     Query(params): Query<VoivodeshipQuery>,
-) -> impl IntoResponse {
+) -> impl IntoApiResponse {
     if !validate_teryt(&params.teryt) {
         return Err(ApiError::InvalidTerytCode);
     }
@@ -50,12 +48,15 @@ async fn list_schools(
     Ok(Json(schools))
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, JsonSchema)]
 struct SchoolParams {
     rspo_id: i32,
 }
 
-async fn get_school(State(db): State<Db>, Path(params): Path<SchoolParams>) -> impl IntoResponse {
+async fn get_school(
+    State(db): State<Db>,
+    Path(params): Path<SchoolParams>,
+) -> impl IntoApiResponse {
     let (school, versions) = try_join!(
         db.get_school_by_rspo_id(params.rspo_id),
         db.get_versions_by_rspo_id(params.rspo_id),
@@ -69,7 +70,7 @@ async fn get_school(State(db): State<Db>, Path(params): Path<SchoolParams>) -> i
     }))
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, JsonSchema)]
 struct OptivumVersionParams {
     rspo_id: i32,
     // generated_on: NaiveDate,
@@ -79,20 +80,23 @@ struct OptivumVersionParams {
 async fn get_optivum_version_data(
     State(db): State<Db>,
     Path(params): Path<OptivumVersionParams>,
-) -> impl IntoResponse {
+) -> impl IntoApiResponse {
     let timetable_data = db
         .get_version_data(params.rspo_id, params.generated_on, params.discriminant)
         .await?;
     let Some(timetable_data) = timetable_data else {
         return Err(ApiError::EntityNotFound)
     };
-    Ok(timetable_data)
+    let Ok(timetable_data) = RawValue::from_string(timetable_data) else {
+        return Err(ApiError::Internal)
+    };
+    Ok(Json(timetable_data))
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, JsonSchema)]
 struct SubmitUrlBody {
     url: String,
-    email_address: Option<EmailAddress>,
+    email_address: Option<String>,
 }
 
 async fn submit_url(
@@ -100,7 +104,12 @@ async fn submit_url(
     Path(params): Path<SchoolParams>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     Json(body): Json<SubmitUrlBody>,
-) -> error::Result<StatusCode> {
+) -> impl IntoApiResponse {
+    if let Some(email_address) = &body.email_address {
+        if !EmailAddress::is_valid(email_address) {
+            return Err(ApiError::InvalidEmailAddress);
+        }
+    }
     db.submit_url(params.rspo_id, body.url, body.email_address, addr)
         .await?;
     Ok(StatusCode::CREATED)

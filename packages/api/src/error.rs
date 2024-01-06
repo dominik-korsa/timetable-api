@@ -1,25 +1,32 @@
+use aide::OperationIo;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
+use schemars::JsonSchema;
 use serde::Serialize;
 
 pub(crate) type Result<T> = std::result::Result<T, ApiError>;
 
-#[derive(Clone)]
+#[derive(Clone, JsonSchema, Debug, OperationIo)]
 pub(crate) enum ApiError {
     DbError,
     InvalidTerytCode,
+    InvalidEmailAddress,
     EntityNotFound,
     RouteNotFound,
+    Internal,
 }
 
 impl ApiError {
     fn get_status_code(&self) -> StatusCode {
+        #[allow(clippy::match_same_arms)]
         match self {
             ApiError::DbError => StatusCode::INTERNAL_SERVER_ERROR,
             ApiError::InvalidTerytCode => StatusCode::BAD_REQUEST,
+            ApiError::InvalidEmailAddress => StatusCode::BAD_REQUEST,
             ApiError::EntityNotFound => StatusCode::NOT_FOUND,
             ApiError::RouteNotFound => StatusCode::NOT_FOUND,
+            ApiError::Internal => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 
@@ -27,8 +34,10 @@ impl ApiError {
         match self {
             ApiError::DbError => "Unexpected database error",
             ApiError::InvalidTerytCode => "Invalid TERYT code",
+            ApiError::InvalidEmailAddress => "Invalid email address",
             ApiError::EntityNotFound => "Entity not found",
             ApiError::RouteNotFound => "Route not found",
+            ApiError::Internal => "Internal server error",
         }
     }
 }
