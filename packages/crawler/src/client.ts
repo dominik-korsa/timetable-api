@@ -1,7 +1,7 @@
 import axios, { Axios } from 'axios';
 import knex from 'knex';
 import { JSDOM } from 'jsdom';
-import { getPageType, findLinksByKeywords, fixUrl, uniqueBy } from './utils.js';
+import { getPageType, findLinksByKeywords, fixUrl, uniqueBy, PageType } from './utils.js';
 import { parse } from '@timetable-api/optivum-scrapper';
 import { createHash } from 'crypto';
 import { SchoolsTable, OptivumTimetableVersionsTable, TimetableUrlsTable } from '@timetable-api/common';
@@ -70,7 +70,7 @@ async function findTimetables(
     axiosInstance: Axios,
     checkedLinks: Set<string> = new Set<string>(),
 ) {
-    const timetables: { url: string; type: 'optivum' | 'asctimetables' }[] = [];
+    const timetables: { url: string; type: PageType }[] = [];
     let response;
     try {
         response = await axiosInstance.get<string>(url.replace('://www.', '://'));

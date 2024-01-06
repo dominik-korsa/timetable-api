@@ -44,7 +44,7 @@ export function findLinksByKeywords(document: Document): string[] {
     return [...links].map(link => link.replace('://www.', '://'));
 }
 
-type PageType = 'optivum' | 'asctimetables';
+export type PageType = 'optivum' | 'asctimetables';
 
 function pageIsAsc(page: Document) {
     return (
