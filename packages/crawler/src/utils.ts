@@ -26,10 +26,10 @@ export function findLinksByKeywords(document: Document): string[] {
                     link.getAttribute('href')?.toLowerCase()?.includes(keyword),
             )
         )
-            links.add(link.getAttribute('href') ?? '');
+            links.add(link.getAttribute('href')!);
     });
     Array.from(document.querySelectorAll('iframe[src]')).forEach((link) => {
-        links.add(link.getAttribute('src') ?? '');
+        links.add(link.getAttribute('src')!);
     });
     Array.from(document.querySelectorAll('script')).forEach((element) => {
         element.innerHTML
