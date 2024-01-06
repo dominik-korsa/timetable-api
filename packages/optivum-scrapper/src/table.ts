@@ -34,6 +34,10 @@ export class Table {
         return /Plan lekcji (?:oddziału|nauczyciela|sali) - (.+)/.exec(this.document.title)?.[1];
     }
 
+    public getHtml(): string {
+        return this.document.body.innerHTML;
+    }
+
     public getGenerationDate(): string | undefined {
         return /<td align="right">\nwygenerowano(.+?)<br>\nza pomocą programu/
             .exec(this.documentInnerHtml)?.[1]
