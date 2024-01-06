@@ -18,7 +18,6 @@ impl Db {
     }
 
     pub(crate) async fn get_schools_by_teryt(&self, teryt: &str) -> sqlx::Result<Vec<School>> {
-        assert!(!teryt.is_empty(), "TERYT should not be empty");
         sqlx::query_as!(
             School,
             r#"SELECT "name", "rspo_id", "commune_teryt" as "teryt" FROM "schools"

@@ -2,10 +2,10 @@ use crate::db::Db;
 use crate::entities::SchoolWithVersions;
 use crate::error::ApiError;
 use aide::axum::routing::{get, post};
-use aide::axum::{ApiRouter, IntoApiResponse, RouterExt};
-use axum::extract::{ConnectInfo, Json, Path, Query, State};
+use aide::axum::{ApiRouter, IntoApiResponse};
+use axum::extract::{ConnectInfo, Path, Query, State};
 use axum::http::StatusCode;
-use axum::Router;
+use axum_jsonschema::Json;
 use email_address::EmailAddress;
 use regex_macro::regex;
 use schemars::JsonSchema;
@@ -14,7 +14,7 @@ use std::net::SocketAddr;
 use tokio::try_join;
 
 pub(crate) fn create_schools_router() -> ApiRouter<Db> {
-    Router::new()
+    ApiRouter::new()
         .api_route("/v1/schools", get(list_schools))
         .api_route("/v1/schools/:rspo_id", get(get_school))
         .api_route(
