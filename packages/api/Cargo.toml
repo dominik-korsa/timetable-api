@@ -15,3 +15,5 @@ regex = "1.10.2"
 regex-macro = "0.2.0"
 chrono = { version = "0.4.31", features = ["serde"] }
 email_address = "0.2.4"
+aide = { version = "0.13.1", features = ["axum", "macros"] }
+schemars = "0.8.16"
