@@ -1,0 +1,23 @@
+{
+  "name": "@timetable-api/crawler",
+  "private": true,
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node .",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
+  },
+  "dependencies": {
+    "@timetable-api/common": "workspace:*",
+    "@timetable-api/optivum-scrapper": "workspace:^",
+    "@types/jsdom": "^21.1.1",
+    "@types/pg": "^8.10.9",
+    "dotenv": "^16.3.1",
+    "jsdom": "^22.1.0",
+    "knex": "^3.1.0",
+    "pg": "^8.11.3",
+    "sha512-crypt-ts": "^0.1.27"
+  },
+  "type": "module"
+}
