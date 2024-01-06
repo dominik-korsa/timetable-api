@@ -18,13 +18,13 @@ export function findLinksByKeywords(document: Document): string[] {
     const links = new Set<string>();
     Array.from(document.querySelectorAll('a[href]')).forEach((link) => {
         if (
-            keywords.find(
+            keywords.some(
                 (keyword) =>
                     link.textContent?.toLowerCase()?.includes(keyword) === true ||
                     link.querySelector('img')?.getAttribute('src')?.toLowerCase()?.includes(keyword) === true ||
                     link.querySelector('img')?.getAttribute('alt')?.toLowerCase()?.includes(keyword) === true ||
                     link.getAttribute('href')?.toLowerCase()?.includes(keyword),
-            ) !== undefined
+            )
         )
             links.add(link.getAttribute('href')?.replace('www.', '') ?? '');
     });
