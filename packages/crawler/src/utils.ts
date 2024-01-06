@@ -23,7 +23,7 @@ export function findLinksByKeywords(document: Document): string[] {
                     link.textContent?.toLowerCase()?.includes(keyword) === true ||
                     link.querySelector('img')?.getAttribute('src')?.toLowerCase()?.includes(keyword) === true ||
                     link.querySelector('img')?.getAttribute('alt')?.toLowerCase()?.includes(keyword) === true ||
-                    link.getAttribute('href')?.toLowerCase()?.includes(keyword),
+                    link.getAttribute('href')!.toLowerCase().includes(keyword),
             )
         )
             links.add(link.getAttribute('href')!);
