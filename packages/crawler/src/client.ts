@@ -1,7 +1,7 @@
 import axios, { Axios } from 'axios';
 import knex from 'knex';
 import { JSDOM } from 'jsdom';
-import { checkTimetablePage, findLinksByKeywords, fixUrl } from './utils.js';
+import { getPageType, findLinksByKeywords, fixUrl } from './utils.js';
 import { parse } from '@timetable-api/optivum-scrapper';
 import { createHash } from 'crypto';
 import { SchoolsTable, OptivumTimetableVersionsTable, TimetableUrlsTable } from '@timetable-api/common';
@@ -32,40 +32,36 @@ export async function run() {
             console.log(`[RSPO ID: ${school.rspo_id}] Pushing data to database...`);
         }
         timetables.map(async (timetable) => {
-            try {
-                const hash = createHash('sha512').update(timetable.data.htmls.toString()).digest('hex');
-                const timetableVersion = await dbClient<OptivumTimetableVersionsTable, { unqiue_id: number }>(
-                    'optivum_timetable_versions',
-                )
-                    .returning('unique_id')
-                    .insert({
-                        school_rspo_id: school.rspo_id,
-                        generated_on: timetable.data.data.generationDate,
-                        timetable_data: JSON.stringify(timetable.data.data),
-                        discriminant: dbClient.raw(
-                            `(SELECT coalesce(max(discriminant), -1) + 1 FROM optivum_timetable_versions WHERE school_rspo_id = ${school.rspo_id} AND generated_on = '${timetable.data.data.generationDate}')`,
-                        ),
-                        hash,
-                    })
-                    .onConflict(['school_rspo_id', 'hash'])
-                    .merge(['school_rspo_id'])
-                    .returning('*')
-                    .first();
-                if (timetableVersion === undefined) {
-                    return;
-                }
-                await dbClient<TimetableUrlsTable, { id: number }[]>('timetable_urls')
-                    .returning('id')
-                    .insert({
-                        timetable_version_id: timetableVersion.unique_id,
-                        school_rspo_id: school.rspo_id,
-                        url: timetable.url,
-                    })
-                    .onConflict(['school_rspo_id', 'url', 'timetable_id'])
-                    .merge(['last_check_at']);
-            } catch {
+            const hash = createHash('sha512').update(JSON.stringify(timetable.data.htmls)).digest('hex');
+            const timetableVersion = await dbClient<OptivumTimetableVersionsTable, { unqiue_id: number }>(
+                'optivum_timetable_versions',
+            )
+                .returning('unique_id')
+                .insert({
+                    school_rspo_id: school.rspo_id,
+                    generated_on: timetable.data.data.generationDate,
+                    timetable_data: JSON.stringify(timetable.data.data),
+                    discriminant: dbClient.raw(
+                        `(SELECT coalesce(max(discriminant), -1) + 1 FROM optivum_timetable_versions WHERE school_rspo_id = ${school.rspo_id} AND generated_on = '${timetable.data.data.generationDate}')`,
+                    ),
+                    hash,
+                })
+                .onConflict(['school_rspo_id', 'hash'])
+                .merge(['school_rspo_id'])
+                .returning('*')
+                .first();
+            if (timetableVersion === undefined) {
                 return;
             }
+            await dbClient<TimetableUrlsTable, { id: number }[]>('timetable_urls')
+                .returning('id')
+                .insert({
+                    timetable_version_id: timetableVersion.unique_id,
+                    school_rspo_id: school.rspo_id,
+                    url: timetable.url,
+                })
+                .onConflict(['school_rspo_id', 'url', 'timetable_id'])
+                .merge(['last_check_at']);
         });
         console.log(`[RSPO ID: ${school.rspo_id}] Done!`);
     });
@@ -96,8 +92,8 @@ async function findTimetables(depthLimit: number, url: string, axiosInstance: Ax
             }),
         );
     }
-    const timetableType = checkTimetablePage(document);
-    if (timetableType !== undefined) timetables.push({ url, type: timetableType });
+    const timetableType = getPageType(document);
+    if (timetableType !== null) timetables.push({ url, type: timetableType });
     return { url: url.replace('www.', ''), timetables: [...new Set(timetables)] };
 }
 
