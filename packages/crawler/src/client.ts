@@ -64,7 +64,12 @@ export async function run() {
     });
 }
 
-async function findTimetables(depthLimit: number, url: string, axiosInstance: Axios, checkedLinks: string[] = []) {
+async function findTimetables(
+    depthLimit: number,
+    url: string,
+    axiosInstance: Axios,
+    checkedLinks: Set<string> = new Set<string>(),
+) {
     const timetables: { url: string; type: 'optivum' | 'asctimetables' }[] = [];
     let response;
     try {
@@ -72,7 +77,7 @@ async function findTimetables(depthLimit: number, url: string, axiosInstance: Ax
     } catch {
         return;
     }
-    checkedLinks.push(url);
+    checkedLinks.add(url);
     const document = new JSDOM(response.data).window.document;
     const links = [
         ...new Set(findLinksByKeywords(document).map((link) => new URL(link, url.replace('www.', '')).toString())),
@@ -80,8 +85,8 @@ async function findTimetables(depthLimit: number, url: string, axiosInstance: Ax
     if (depthLimit > 0) {
         await Promise.all(
             links.map(async (link) => {
-                if (checkedLinks.includes(link)) return;
-                checkedLinks.push(link);
+                if (checkedLinks.has(link)) return;
+                checkedLinks.add(link);
                 const result = await findTimetables(depthLimit - 1, link, axiosInstance, checkedLinks);
                 if (result !== undefined) {
                     timetables.push(...result.timetables);
