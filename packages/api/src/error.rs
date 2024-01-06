@@ -19,6 +19,7 @@ pub(crate) enum ApiError {
 
 impl ApiError {
     fn get_status_code(&self) -> StatusCode {
+        #[allow(clippy::match_same_arms)]
         match self {
             ApiError::DbError => StatusCode::INTERNAL_SERVER_ERROR,
             ApiError::InvalidTerytCode => StatusCode::BAD_REQUEST,
