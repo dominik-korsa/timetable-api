@@ -66,3 +66,15 @@ export function getPageType(page: Document): PageType | null {
 
 export const fixUrl = (url: string) =>
     !url.includes('://') ? 'http://' + url.replace('://www.', '://') : url.replace('://www.', '://');
+
+export function uniqueBy<T, H extends string | number>(array: T[], getHash: (el: T) => H) {
+  const existingHashes = new Set<H>();
+  const result: T[] = [];
+  array.forEach((el) => {
+    const hash = getHash(el);
+    if (existingHashes.has(hash)) return;
+    existingHashes.add(hash);
+    result.push(el);
+  });
+  return result;
+};

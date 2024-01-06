@@ -1,7 +1,7 @@
 import axios, { Axios } from 'axios';
 import knex from 'knex';
 import { JSDOM } from 'jsdom';
-import { getPageType, findLinksByKeywords, fixUrl } from './utils.js';
+import { getPageType, findLinksByKeywords, fixUrl, uniqueBy } from './utils.js';
 import { parse } from '@timetable-api/optivum-scrapper';
 import { createHash } from 'crypto';
 import { SchoolsTable, OptivumTimetableVersionsTable, TimetableUrlsTable } from '@timetable-api/common';
@@ -96,7 +96,7 @@ async function findTimetables(
     }
     const timetableType = getPageType(document);
     if (timetableType !== null) timetables.push({ url, type: timetableType });
-    return { url: url.replace('://www.', '://'), timetables: [...new Set(timetables)] };
+    return { url: url.replace('://www.', '://'), timetables: uniqueBy(timetables, (el) => el.url) };
 }
 
 async function getTimetables(axiosInstance: Axios, websiteUrl: string) {
