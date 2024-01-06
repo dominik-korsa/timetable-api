@@ -26,10 +26,10 @@ export function findLinksByKeywords(document: Document): string[] {
                     link.getAttribute('href')?.toLowerCase()?.includes(keyword),
             )
         )
-            links.add(link.getAttribute('href')?.replace('www.', '') ?? '');
+            links.add(link.getAttribute('href') ?? '');
     });
     Array.from(document.querySelectorAll('iframe[src]')).forEach((link) => {
-        links.add(link.getAttribute('src')?.replace('www.', '') ?? '');
+        links.add(link.getAttribute('src') ?? '');
     });
     Array.from(document.querySelectorAll('script')).forEach((element) => {
         element.innerHTML
@@ -37,11 +37,11 @@ export function findLinksByKeywords(document: Document): string[] {
             .match(/(?:(?:https?|ftp):\/\/)?[\w/\-?=%.]+\.[\w/\-&?=%.]+/gm)
             ?.forEach((link) => {
                 if (keywords.find((keyword) => link.toLowerCase().includes(keyword)) !== undefined) {
-                    links.add(link.replace('www.', ''));
+                    links.add(link);
                 }
             });
     });
-    return [...links];
+    return [...links].map(link => link.replace('://www.', '://'));
 }
 
 type PageType = 'optivum' | 'asctimetables';
@@ -65,4 +65,4 @@ export function getPageType(page: Document): PageType | null {
 }
 
 export const fixUrl = (url: string) =>
-    !url.includes('://') ? 'http://' + url.replace('www.', '') : url.replace('www.', '');
+    !url.includes('://') ? 'http://' + url.replace('://www.', '://') : url.replace('://www.', '://');

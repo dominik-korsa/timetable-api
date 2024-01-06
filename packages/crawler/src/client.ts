@@ -73,14 +73,14 @@ async function findTimetables(
     const timetables: { url: string; type: 'optivum' | 'asctimetables' }[] = [];
     let response;
     try {
-        response = await axiosInstance.get<string>(url.replace('www.', ''));
+        response = await axiosInstance.get<string>(url.replace('://www.', '://'));
     } catch {
         return;
     }
     checkedLinks.add(url);
     const document = new JSDOM(response.data).window.document;
     const links = [
-        ...new Set(findLinksByKeywords(document).map((link) => new URL(link, url.replace('www.', '')).toString())),
+        ...new Set(findLinksByKeywords(document).map((link) => new URL(link, url.replace('://www.', '://')).toString())),
     ];
     if (depthLimit > 0) {
         await Promise.all(
@@ -96,7 +96,7 @@ async function findTimetables(
     }
     const timetableType = getPageType(document);
     if (timetableType !== null) timetables.push({ url, type: timetableType });
-    return { url: url.replace('www.', ''), timetables: [...new Set(timetables)] };
+    return { url: url.replace('://www.', '://'), timetables: [...new Set(timetables)] };
 }
 
 async function getTimetables(axiosInstance: Axios, websiteUrl: string) {
