@@ -10,6 +10,7 @@ use email_address::EmailAddress;
 use regex_macro::regex;
 use schemars::JsonSchema;
 use serde::Deserialize;
+use serde_json::value::RawValue;
 use std::net::SocketAddr;
 use tokio::try_join;
 
@@ -86,7 +87,10 @@ async fn get_optivum_version_data(
     let Some(timetable_data) = timetable_data else {
         return Err(ApiError::EntityNotFound)
     };
-    Ok(timetable_data)
+    let Ok(timetable_data) = RawValue::from_string(timetable_data) else {
+        return Err(ApiError::Internal)
+    };
+    Ok(Json(timetable_data))
 }
 
 #[derive(Deserialize, JsonSchema)]

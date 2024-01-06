@@ -14,6 +14,7 @@ pub(crate) enum ApiError {
     InvalidEmailAddress,
     EntityNotFound,
     RouteNotFound,
+    Internal,
 }
 
 impl ApiError {
@@ -24,6 +25,7 @@ impl ApiError {
             ApiError::InvalidEmailAddress => StatusCode::BAD_REQUEST,
             ApiError::EntityNotFound => StatusCode::NOT_FOUND,
             ApiError::RouteNotFound => StatusCode::NOT_FOUND,
+            ApiError::Internal => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 
@@ -34,6 +36,7 @@ impl ApiError {
             ApiError::InvalidEmailAddress => "Invalid email address",
             ApiError::EntityNotFound => "Entity not found",
             ApiError::RouteNotFound => "Route not found",
+            ApiError::Internal => "Internal server error",
         }
     }
 }
