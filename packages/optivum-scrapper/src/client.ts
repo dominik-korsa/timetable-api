@@ -12,7 +12,6 @@ import {
 } from '@timetable-api/common';
 import { Timetable } from './timetable.js';
 import { Axios } from 'axios';
-import fs from 'fs';
 import { parseClassCode, parseTeacherFullName } from './utils.js';
 
 export async function parse(url: string) {
@@ -94,6 +93,7 @@ export async function parse(url: string) {
     });
 
     const lessons = weekdays.map(() => timeSlots.map((): TimetableLesson[] => []));
+    const htmls: string[] = units.map((unit) => unit.table.getHtml());
     units.forEach((unit) => {
         unit.table.getLessons().forEach(({ lesson, weekdayIndex, timeSlotIndex }) => {
             if (lesson.teacherId === null && lesson.teacherInitials !== null) {
@@ -167,7 +167,7 @@ export async function parse(url: string) {
                 unit.symbol === 'n'
                     ? unit.id.toString()
                     : lesson.teacherId?.toString() ??
-                      (lesson.teacherInitials != null ? `#${lesson.teacherInitials}` : null);
+                    (lesson.teacherInitials != null ? `#${lesson.teacherInitials}` : null);
 
             const existingLesson = lessons[weekdayIndex][timeSlotIndex].find(
                 (l) =>
@@ -181,7 +181,7 @@ export async function parse(url: string) {
                         unit.symbol === 'n'
                             ? unit.id.toString()
                             : lesson.teacherId?.toString() ??
-                              (lesson.teacherInitials !== null ? `#${lesson.teacherInitials}` : null),
+                            (lesson.teacherInitials !== null ? `#${lesson.teacherInitials}` : null),
                     roomId:
                         unit.symbol === 's'
                             ? unit.id.toString()
@@ -207,9 +207,9 @@ export async function parse(url: string) {
                     (c) =>
                         c.id === unit.id.toString() &&
                         c.commonGroupId ===
-                            (lesson.classes[0]?.groupCode != null
-                                ? `${unit.id.toString()};${existingLesson.subjectId};${lesson.classes[0]?.groupCode}`
-                                : null),
+                        (lesson.classes[0]?.groupCode != null
+                            ? `${unit.id.toString()};${existingLesson.subjectId};${lesson.classes[0]?.groupCode}`
+                            : null),
                 )
             ) {
                 existingLesson.classes.push({
@@ -232,7 +232,7 @@ export async function parse(url: string) {
             }
         });
     });
-    await fs.promises.writeFile(
+    /*await fs.promises.writeFile(
         'data.json',
         JSON.stringify({
             generationDate,
@@ -248,16 +248,23 @@ export async function parse(url: string) {
             lessons,
         }),
         'utf8',
-    );
+    );*/
     return {
-        weekdays,
-        timeSlots,
-        classes,
-        teachers,
-        rooms,
-        subjects,
-        commonGroups,
-        interclassGroups,
-        lessons,
+        data: {
+            common: {
+                weekdays,
+                timeSlots,
+                classes: Array.from(classes),
+                teachers: Array.from(teachers),
+                rooms: Array.from(rooms),
+                subjects: Array.from(subjects),
+                commonGroups: Array.from(commonGroups),
+                interclassGroups: Array.from(interclassGroups),
+            },
+            lessons,
+            validationDate,
+            generationDate
+        },
+        htmls
     };
 }
