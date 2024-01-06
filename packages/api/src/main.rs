@@ -8,11 +8,12 @@ mod routes;
 
 use crate::db::Db;
 use crate::error::ApiError;
-use crate::routes::docs::{create_docs_router, transform_api_docs};
+use crate::routes::docs::{create_docs_router, redirect_to_docs, transform_api_docs};
 use crate::routes::schools::create_schools_router;
 use aide::axum::ApiRouter;
 use aide::openapi::OpenApi;
 use axum::response::IntoResponse;
+use axum::routing::get;
 use axum::Extension;
 use dotenvy::dotenv;
 use std::env;
@@ -36,6 +37,7 @@ async fn main() {
 
     let app_router = ApiRouter::new()
         .merge(create_schools_router())
+        .route("/", get(redirect_to_docs))
         .nest_api_service("/docs", create_docs_router())
         .fallback(handle_fallback)
         .finish_api_with(&mut api, transform_api_docs)

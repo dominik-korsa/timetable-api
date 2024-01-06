@@ -26,11 +26,8 @@ pub(crate) fn create_schools_router() -> ApiRouter<Db> {
 
 #[derive(Deserialize, JsonSchema)]
 struct VoivodeshipQuery {
-    /// Accepted values:
-    /// - 2 digit voivodeship TERYT code
-    /// - 4 digit county TERYT code
-    /// - 6 digit commune without type TERYT code
-    /// - 7 digit commune with type TERYT code
+    /// TERYT code of the school location:
+    /// voivodeship (2 digits) / county (4 digits) / commune with optional type (6-7 digits)
     teryt: String,
 }
 
