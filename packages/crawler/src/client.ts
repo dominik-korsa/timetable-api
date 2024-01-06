@@ -50,9 +50,6 @@ export async function run() {
                 .merge(['school_rspo_id'])
                 .returning('*')
                 .first();
-            if (timetableVersion === undefined) {
-                return;
-            }
             await dbClient<TimetableUrlsTable, { id: number }[]>('timetable_urls')
                 .returning('id')
                 .insert({
