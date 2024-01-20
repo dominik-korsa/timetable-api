@@ -71,7 +71,7 @@ impl Db {
         )
         .fetch_optional(&self.pool)
         .await?
-        .map(|result| result.timetable_data);
+        .and_then(|result| result.timetable_data);
         Ok(timetable_data)
     }
 
