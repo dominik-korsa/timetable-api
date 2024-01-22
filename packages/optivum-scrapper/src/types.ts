@@ -53,7 +53,6 @@ export interface TableData {
     generationDate: string | undefined;
     validationDate: string | undefined;
     timeSlots: TimeSlot[];
-    timeSlotCount: number;
     weekdays: Weekday[];
     lessons: LessonTimeSlot[];
 }

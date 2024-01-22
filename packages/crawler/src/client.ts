@@ -107,7 +107,7 @@ async function getTimetables(axiosInstance: Axios, websiteUrl: string) {
     try {
         const promises = timetablesInfo.timetables
             .filter((timetableInfo) => timetableInfo.type === 'optivum')
-            .map(async (timetableInfo) => ({ data: await parse(timetableInfo.url), url: timetableInfo.url }));
+            .map(async (timetableInfo) => ({ data: await parse(timetableInfo.url, axiosInstance), url: timetableInfo.url }));
         return await Promise.all(promises);
     } catch {
         return [];

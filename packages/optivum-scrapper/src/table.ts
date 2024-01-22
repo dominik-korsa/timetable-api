@@ -30,23 +30,17 @@ export class Table {
         niedziela: 7,
     };
 
-    public getFullName(): string | undefined {
-        return /Plan lekcji (?:oddziału|nauczyciela|sali) - (.+)/.exec(this.document.title)?.[1];
-    }
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    public getFullName = (): string => this.document.querySelector('span.tytulnapis')!.textContent!;
 
-    public getHtml(): string {
-        return this.document.body.innerHTML;
-    }
+    public getHtml = (): string => this.document.body.innerHTML;
 
-    public getGenerationDate(): string | undefined {
-        return /<td align="right">\nwygenerowano(.+?)<br>\nza pomocą programu/
-            .exec(this.documentInnerHtml)?.[1]
-            ?.trim();
-    }
+    public getGenerationDate = (): string | undefined =>
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        /<td align="right">\nwygenerowano(.+?)<br>\nza pomocą programu/.exec(this.documentInnerHtml)![1]!.trim();
 
-    public getValidationDate(): string | undefined {
-        return /<td align="left">\nObowiązuje od: (.+?)\n<\/td>/.exec(this.documentInnerHtml)?.[1]?.trim();
-    }
+    public getValidationDate = (): string | undefined =>
+        /<td align="left">\nObowiązuje od: (.+?)\n<\/td>/.exec(this.documentInnerHtml)?.[1]?.trim();
 
     public getTimeSlots(): TimeSlot[] {
         return [...this.mainTable.querySelectorAll('tr:not(:first-of-type)')].map((row, index) => {
@@ -63,10 +57,6 @@ export class Table {
                 endMinute,
             };
         });
-    }
-
-    public getTimeSlotCount(): number {
-        return this.rows.length;
     }
 
     public getWeekdays(): Weekday[] {
@@ -106,7 +96,6 @@ export class Table {
             generationDate: this.getGenerationDate(),
             validationDate: this.getValidationDate(),
             timeSlots: this.getTimeSlots(),
-            timeSlotCount: this.getTimeSlotCount(),
             weekdays: this.getWeekdays(),
             lessons: this.getLessons(),
         };
