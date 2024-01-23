@@ -63,17 +63,17 @@ export async function parse(url: string, axiosInstance: Axios): Promise<Timetabl
             order: null,
             code: null,
             longOrder: null,
-            fullName: unit.table.getFullName() ?? null,
+            fullName: unit.table.getFullName(),
         });
     });
     teacherTables.forEach((unit) => {
         if (teachers.has(unit.id.toString())) return;
-        const parsedFullName = parseTeacherFullName(unit.table.getFullName() ?? '');
+        const parsedFullName = parseTeacherFullName(unit.table.getFullName());
         teachers.set(unit.id.toString(), {
             id: unit.id.toString(),
             initials: parsedFullName?.initials ?? null,
             name: parsedFullName?.name.trim() ?? null,
-            fullName: unit.table.getFullName() ?? null,
+            fullName: unit.table.getFullName(),
         });
     });
     roomTables.forEach((unit) => {
@@ -82,7 +82,7 @@ export async function parse(url: string, axiosInstance: Axios): Promise<Timetabl
             id: unit.id.toString(),
             code: null,
             name: null,
-            fullName: unit.table.getFullName() ?? null,
+            fullName: unit.table.getFullName(),
         });
     });
 
@@ -102,7 +102,6 @@ export async function parse(url: string, axiosInstance: Axios): Promise<Timetabl
                 teachers.set(`#${lesson.teacherInitials}`, {
                     id: `#${lesson.teacherInitials}`,
                     fullName: null,
-                    slugs: [],
                     initials: lesson.teacherInitials,
                     name: null,
                 });
@@ -117,7 +116,6 @@ export async function parse(url: string, axiosInstance: Axios): Promise<Timetabl
                         code: lesson.roomCode,
                         fullName: existingRoom?.fullName ?? null,
                         name: existingRoom?.fullName?.replace(lesson.roomCode ?? '', '').trim() ?? null,
-                        slugs: [],
                     });
                 }
             }
@@ -147,7 +145,6 @@ export async function parse(url: string, axiosInstance: Axios): Promise<Timetabl
                             code: _class.code,
                             longOrder: existingClass?.fullName?.replace(_class.code ?? '', '').trim() ?? null,
                             fullName: existingClass?.fullName ?? null,
-                            slugs: [],
                         });
                     }
                     if (_class.groupCode !== null && lesson.subjectCode !== null) {
@@ -234,34 +231,17 @@ export async function parse(url: string, axiosInstance: Axios): Promise<Timetabl
             }
         });
     });
-    /*await fs.promises.writeFile(
-        'data.json',
-        JSON.stringify({
-            generationDate,
-            validationDate,
-            weekdays,
-            timeSlots,
-            classes: classes.values(),
-            teachers: teachers.values(),
-            rooms: rooms.values(),
-            subjects: subjects.values(),
-            commonGroups: commonGroups.values(),
-            interclassGroups: interclassGroups.values(),
-            lessons,
-        }),
-        'utf8',
-    );*/
     return {
         data: {
             common: {
                 weekdays,
-                timeSlots: [...timeSlots].map(([, value]) => value),
-                classes: [...classes].map(([, value]) => value),
-                teachers: [...teachers].map(([, value]) => value),
-                rooms: [...rooms].map(([, value]) => value),
-                subjects: [...subjects].map(([, value]) => value),
-                commonGroups: [...commonGroups].map(([, value]) => value),
-                interclassGroups: [...interclassGroups].map(([, value]) => value),
+                timeSlots: [...timeSlots.values()],
+                classes: [...classes.values()],
+                teachers: [...teachers.values()],
+                rooms: [...rooms.values()],
+                subjects: [...subjects.values()],
+                commonGroups: [...commonGroups.values()],
+                interclassGroups: [...interclassGroups.values()],
             },
             lessons: lessons.flat().flat(),
             validFrom: validationDate ?? null,

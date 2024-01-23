@@ -35,7 +35,7 @@ export class Table {
 
     public getHtml = (): string => this.document.body.innerHTML;
 
-    public getGenerationDate = (): string | undefined =>
+    public getGenerationDate = (): string =>
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         /<td align="right">\nwygenerowano(.+?)<br>\nza pomocą programu/.exec(this.documentInnerHtml)![1]!.trim();
 
@@ -43,7 +43,7 @@ export class Table {
         /<td align="left">\nObowiązuje od: (.+?)\n<\/td>/.exec(this.documentInnerHtml)?.[1]?.trim();
 
     public getTimeSlots(): TimeSlot[] {
-        return [...this.mainTable.querySelectorAll('tr:not(:first-of-type)')].map((row, index) => {
+        return [...this.mainTable.querySelectorAll('tr:not(:first-of-type)')].map((row) => {
             const name = row.querySelector('td.nr')?.textContent?.trim();
             const timeSpan = row.querySelector('td.g')?.textContent?.trim();
             if (name === undefined || timeSpan === undefined) {
@@ -51,7 +51,6 @@ export class Table {
             }
             const [beginMinute, endMinute] = timeSpan.split('-').map((time) => parseTime(time));
             return {
-                index,
                 name,
                 beginMinute,
                 endMinute,
