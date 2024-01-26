@@ -77,5 +77,5 @@ function checkUrl(url: string) {
     if (url === '' || !/(^https?:\/\/)?((?:[a-z0-9-]+\.)+[a-z][a-z0-9-]*)(:\d{1,5})?(\/.*)?$/m.test(url)) {
         return null;
     }
-    return url.includes('://') ? 'http://' + url.replace('www.', '') : url.replace('www.', '');
+    return url.includes('://') ? url.replace('://www.', '://') : 'http://' + url.replace('://www.', '://');
 }
