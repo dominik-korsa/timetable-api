@@ -25,7 +25,7 @@ export async function pushOptivumTimetableVersion(
     schoolRspoId: number,
     hash: string,
 ) {
-    return await dbClient<OptivumTimetableVersionsTable, { unqiue_id: number }>('optivum_timetable_versions')
+    return (await dbClient<OptivumTimetableVersionsTable, { unqiue_id: number }>('optivum_timetable_versions')
         .returning('unique_id')
         .insert({
             school_rspo_id: schoolRspoId,
@@ -38,8 +38,7 @@ export async function pushOptivumTimetableVersion(
         })
         .onConflict(['school_rspo_id', 'hash'])
         .merge(['school_rspo_id'])
-        .returning('*')
-        .first();
+        .returning('*'))[0];
 }
 
 export async function pushOptivumTimetableVersionUrl(url: string, timetableVersionId: number, schoolRspoId: number) {
@@ -49,6 +48,6 @@ export async function pushOptivumTimetableVersionUrl(url: string, timetableVersi
             school_rspo_id: schoolRspoId,
             url,
         })
-        .onConflict(['school_rspo_id', 'url', 'timetable_id'])
+        .onConflict(['school_rspo_id', 'url', 'timetable_version_id'])
         .merge(['last_check_at']);
 }
