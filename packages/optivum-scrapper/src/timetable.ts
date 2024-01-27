@@ -1,5 +1,6 @@
-import { Axios, AxiosResponse } from 'axios';
+import { Axios, AxiosInstance, AxiosResponse } from 'axios';
 import { AxiosCacheInstance } from 'axios-cache-interceptor';
+import axiosRetry from 'axios-retry';
 import { JSDOM } from 'jsdom';
 import { Table } from './table.js';
 import { UnitList } from './types.js';
@@ -7,17 +8,18 @@ import { parseUnitLink, parseUnitUrl } from './utils.js';
 import { isDefined } from '@timetable-api/common';
 
 export class Timetable {
-    private readonly baseUrl: string;
+    private baseUrl: string;
     private readonly axios: Axios | AxiosCacheInstance;
 
     constructor(baseUrl: string, axios: Axios | AxiosCacheInstance) {
         this.baseUrl = baseUrl;
         this.axios = axios;
+        axiosRetry(this.axios as AxiosInstance, { retries: 3, retryDelay: (retryCount) => retryCount * 3000 });
     }
 
     private async getDocument(path: string): Promise<{
         response: string;
-        url: string;
+        responseUrl: string;
     }> {
         const url = new URL(path, this.baseUrl).toString();
         const response: AxiosResponse = await this.axios.get(url, {
@@ -28,25 +30,26 @@ export class Timetable {
         });
         return {
             response: response.data as string,
-            // TODO: Return final redirect URL
-            url,
+            responseUrl: response.config.url ?? url,
         };
     }
 
-    public async getTable(symbol: string, id: number) {
+    public async getTable(symbol: string, id: number): Promise<Table> {
         const { response } = await this.getDocument(`plany/${symbol}${id}.html`);
         return new Table(response);
     }
 
     public async getUnitIds(): Promise<UnitList> {
-        const { response } = await this.getDocument(this.baseUrl);
+        const { response, responseUrl } = await this.getDocument(this.baseUrl);
+        this.baseUrl = responseUrl;
         let document = new JSDOM(response).window.document;
-        let url = this.baseUrl;
         if (document.querySelector('script[src="../scripts/powrot.js"]') !== null) {
-            url = this.baseUrl.split('/plany/')[0] + '/index.html';
-            const { response } = await this.getDocument(url);
+            const scriptResponse = (await this.getDocument('../scripts/powrot.js')).response;
+            const { response, responseUrl } = await this.getDocument(
+                /<a href="(.*?)">Plan lekcji<\/a>/.exec(scriptResponse)?.[0] ?? '../index.html',
+            );
+            this.baseUrl = responseUrl;
             document = new JSDOM(response).window.document;
-            // TODO url := redirect URL of response
         }
         if (document.querySelector('.menu') !== null) {
             const list: UnitList = { classIds: [], teacherIds: [], roomIds: [] };
@@ -63,16 +66,16 @@ export class Timetable {
             );
             return list;
         }
-        if (document.querySelector('frame')) {
-            // TODO: Handle cases, where the base URL does not end with index.html or /
-            const { response } = await this.getDocument(new URL('lista.html', url).toString());
+        if (document.querySelector('frame[name="list"]')) {
+            const { response } = await this.getDocument(
+                document.querySelector('frame[name="list"]')?.getAttribute('src') ?? 'lista.html',
+            );
             document = new JSDOM(response).window.document;
-            // TODO url := redirect URL of response
         }
         return this.parseUnitList(document.documentElement.innerHTML);
     }
 
-    public parseUnitList(html: string) {
+    public parseUnitList(html: string): UnitList {
         const document: Document = new JSDOM(html).window.document;
         let units: { id: number; type: string }[];
         if (document.querySelector('select')) {
