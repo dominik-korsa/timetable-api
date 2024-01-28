@@ -35,8 +35,7 @@ export class Table {
     public getHtml = (): string => this.document.body.innerHTML;
 
     public getGenerationDate = (): string =>
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        /<td align="right">\nwygenerowano(.+?)<br>\nza pomocą programu/.exec(this.documentInnerHtml)![1]!.trim();
+        /<td align="right">\nwygenerowano(.+?)<br>\nza pomocą programu/.exec(this.documentInnerHtml)?.[1]?.trim() ?? '';
 
     public getValidationDate = (): string | undefined =>
         /<td align="left">\nObowiązuje od: (.+?)\n<\/td>/.exec(this.documentInnerHtml)?.[1]?.trim();
