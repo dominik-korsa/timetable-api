@@ -30,8 +30,7 @@ async function checkSchool(school: SchoolsTable & { website_url: string }, axios
             const parsedTimetable = await parse(timetableUrl, axiosInstance);
             const hash = createHash('sha512').update(JSON.stringify(parsedTimetable.htmls)).digest('hex');
             const timetableVersion = await pushOptivumTimetableVersion(parsedTimetable, school.rspo_id, hash);
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            await pushOptivumTimetableVersionUrl(timetableUrl, timetableVersion!.unique_id, school.rspo_id);
+            await pushOptivumTimetableVersionUrl(timetableUrl, timetableVersion.unique_id, school.rspo_id);
         }),
     );
     line.update(0, { status: 'Done!' });
