@@ -30,14 +30,12 @@ export class Table {
         niedziela: 7,
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    public getFullName = (): string => this.document.querySelector('span.tytulnapis')!.textContent!;
+    public getFullName = (): string => this.document.querySelector('span.tytulnapis')?.textContent ?? '';  
 
     public getHtml = (): string => this.document.body.innerHTML;
 
     public getGenerationDate = (): string =>
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        /<td align="right">\nwygenerowano(.+?)<br>\nza pomocą programu/.exec(this.documentInnerHtml)![1]!.trim();
+        /<td align="right">\nwygenerowano(.+?)<br>\nza pomocą programu/.exec(this.documentInnerHtml)?.[1]?.trim() ?? '';
 
     public getValidationDate = (): string | undefined =>
         /<td align="left">\nObowiązuje od: (.+?)\n<\/td>/.exec(this.documentInnerHtml)?.[1]?.trim();
