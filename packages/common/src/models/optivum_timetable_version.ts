@@ -20,7 +20,6 @@ export interface TimetableClass {
     * The combination of code and longOrder, e. g. 1A 1 mat.
     */
     fullName: string | null;
-    slugs: string[];
 }
 
 export interface TimetableTeacher {
@@ -28,7 +27,6 @@ export interface TimetableTeacher {
     initials: string | null;
     name: string | null;
     fullName: string | null;
-    slugs: string[];
 }
 
 export interface TimetableRoom {
@@ -36,7 +34,6 @@ export interface TimetableRoom {
     code: string | null;
     name: string | null;
     fullName: string | null;
-    slugs: string[];
 }
 
 export interface TimetableSubject {
@@ -59,7 +56,6 @@ export interface TimetableInterclassGroup {
 
 export interface TimetableTimeSlot {
     name: string;
-    index: number;
     beginMinute: number;
     endMinute: number;
 }
@@ -97,7 +93,7 @@ export interface TimetableVersion {
     data: {
         common: TimetableVersionCommon;
         lessons: TimetableLesson[];
-        validFrom: string;
+        validFrom: string | null;
         generationDate: string;
     }
     htmls: string[];

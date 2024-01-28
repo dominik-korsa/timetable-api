@@ -1,5 +1,4 @@
 import {
-    maxBy,
     TimetableClass,
     TimetableCommonGroup,
     TimetableInterclassGroup,
@@ -8,13 +7,14 @@ import {
     TimetableSubject,
     TimetableTeacher,
     TimetableTimeSlot,
-    TimetableWeekday,
+    TimetableVersion,
 } from '@timetable-api/common';
 import { Timetable } from './timetable.js';
 import { Axios } from 'axios';
 import { parseClassCode, parseTeacherFullName } from './utils.js';
 
-export async function parse(url: string) {
+export async function parse(url: string, axiosInstance: Axios): Promise<TimetableVersion> {
+    const timeSlots = new Map<string, TimetableTimeSlot>();
     const classes = new Map<string, TimetableClass>();
     const teachers = new Map<string, TimetableTeacher>();
     const rooms = new Map<string, TimetableRoom>();
@@ -22,12 +22,11 @@ export async function parse(url: string) {
     const commonGroups = new Map<string, TimetableCommonGroup>();
     const interclassGroups = new Map<string, TimetableInterclassGroup>();
 
-    const timetable = new Timetable(url, new Axios({ headers: {} }));
+    const timetable = new Timetable(url, axiosInstance);
     const unitsIds = await timetable.getUnitIds();
 
     if (unitsIds.classIds.length === 0 && unitsIds.roomIds.length === 0 && unitsIds.teacherIds.length === 0)
         throw new Error('No unit IDs found');
-
     const [classTables, teacherTables, roomTables] = await Promise.all([
         Promise.all(
             unitsIds.classIds.map(async (classId) => ({
@@ -52,11 +51,9 @@ export async function parse(url: string) {
         ),
     ]);
     const units = [...classTables, ...teacherTables, ...roomTables];
-    const tableWithMaxTimeSlots = maxBy(units, (item) => item.table.getTimeSlotCount()).table;
-    const timeSlots: TimetableTimeSlot[] = tableWithMaxTimeSlots.getTimeSlots();
-    const weekdays: TimetableWeekday[] = tableWithMaxTimeSlots.getWeekdays();
-    const generationDate = tableWithMaxTimeSlots.getGenerationDate();
-    const validationDate = tableWithMaxTimeSlots.getValidationDate();
+    const weekdays = units[0].table.getWeekdays();
+    const generationDate = units[0].table.getGenerationDate();
+    const validationDate = units[0].table.getValidationDate();
 
     classTables.forEach((unit) => {
         if (classes.has(unit.id.toString())) return;
@@ -66,19 +63,17 @@ export async function parse(url: string) {
             order: null,
             code: null,
             longOrder: null,
-            fullName: unit.table.getFullName() ?? null,
-            slugs: [],
+            fullName: unit.table.getFullName(),
         });
     });
     teacherTables.forEach((unit) => {
         if (teachers.has(unit.id.toString())) return;
-        const parsedFullName = parseTeacherFullName(unit.table.getFullName() ?? '');
+        const parsedFullName = parseTeacherFullName(unit.table.getFullName());
         teachers.set(unit.id.toString(), {
             id: unit.id.toString(),
             initials: parsedFullName?.initials ?? null,
             name: parsedFullName?.name.trim() ?? null,
-            fullName: unit.table.getFullName() ?? null,
-            slugs: [],
+            fullName: unit.table.getFullName(),
         });
     });
     roomTables.forEach((unit) => {
@@ -87,20 +82,26 @@ export async function parse(url: string) {
             id: unit.id.toString(),
             code: null,
             name: null,
-            fullName: unit.table.getFullName() ?? null,
-            slugs: [],
+            fullName: unit.table.getFullName(),
         });
     });
 
-    const lessons = weekdays.map(() => timeSlots.map((): TimetableLesson[] => []));
+    const lessons: TimetableLesson[][][] = weekdays.map(() => []);
     const htmls: string[] = units.map((unit) => unit.table.getHtml());
     units.forEach((unit) => {
+        unit.table.getTimeSlots().forEach((timeSlot) => {
+            if (!timeSlots.has(timeSlot.name)) {
+                timeSlots.set(timeSlot.name, timeSlot);
+                weekdays.forEach((weekday, index) => {
+                    lessons[index].push([]);
+                });
+            }
+        });
         unit.table.getLessons().forEach(({ lesson, weekdayIndex, timeSlotIndex }) => {
             if (lesson.teacherId === null && lesson.teacherInitials !== null) {
                 teachers.set(`#${lesson.teacherInitials}`, {
                     id: `#${lesson.teacherInitials}`,
                     fullName: null,
-                    slugs: [],
                     initials: lesson.teacherInitials,
                     name: null,
                 });
@@ -115,7 +116,6 @@ export async function parse(url: string) {
                         code: lesson.roomCode,
                         fullName: existingRoom?.fullName ?? null,
                         name: existingRoom?.fullName?.replace(lesson.roomCode ?? '', '').trim() ?? null,
-                        slugs: [],
                     });
                 }
             }
@@ -145,7 +145,6 @@ export async function parse(url: string) {
                             code: _class.code,
                             longOrder: existingClass?.fullName?.replace(_class.code ?? '', '').trim() ?? null,
                             fullName: existingClass?.fullName ?? null,
-                            slugs: [],
                         });
                     }
                     if (_class.groupCode !== null && lesson.subjectCode !== null) {
@@ -167,7 +166,7 @@ export async function parse(url: string) {
                 unit.symbol === 'n'
                     ? unit.id.toString()
                     : lesson.teacherId?.toString() ??
-                    (lesson.teacherInitials != null ? `#${lesson.teacherInitials}` : null);
+                      (lesson.teacherInitials != null ? `#${lesson.teacherInitials}` : null);
 
             const existingLesson = lessons[weekdayIndex][timeSlotIndex].find(
                 (l) =>
@@ -181,7 +180,7 @@ export async function parse(url: string) {
                         unit.symbol === 'n'
                             ? unit.id.toString()
                             : lesson.teacherId?.toString() ??
-                            (lesson.teacherInitials !== null ? `#${lesson.teacherInitials}` : null),
+                              (lesson.teacherInitials !== null ? `#${lesson.teacherInitials}` : null),
                     roomId:
                         unit.symbol === 's'
                             ? unit.id.toString()
@@ -207,9 +206,9 @@ export async function parse(url: string) {
                     (c) =>
                         c.id === unit.id.toString() &&
                         c.commonGroupId ===
-                        (lesson.classes[0]?.groupCode != null
-                            ? `${unit.id.toString()};${existingLesson.subjectId};${lesson.classes[0]?.groupCode}`
-                            : null),
+                            (lesson.classes[0]?.groupCode != null
+                                ? `${unit.id.toString()};${existingLesson.subjectId};${lesson.classes[0]?.groupCode}`
+                                : null),
                 )
             ) {
                 existingLesson.classes.push({
@@ -232,39 +231,22 @@ export async function parse(url: string) {
             }
         });
     });
-    /*await fs.promises.writeFile(
-        'data.json',
-        JSON.stringify({
-            generationDate,
-            validationDate,
-            weekdays,
-            timeSlots,
-            classes: classes.values(),
-            teachers: teachers.values(),
-            rooms: rooms.values(),
-            subjects: subjects.values(),
-            commonGroups: commonGroups.values(),
-            interclassGroups: interclassGroups.values(),
-            lessons,
-        }),
-        'utf8',
-    );*/
     return {
         data: {
             common: {
                 weekdays,
-                timeSlots,
-                classes: Array.from(classes),
-                teachers: Array.from(teachers),
-                rooms: Array.from(rooms),
-                subjects: Array.from(subjects),
-                commonGroups: Array.from(commonGroups),
-                interclassGroups: Array.from(interclassGroups),
+                timeSlots: [...timeSlots.values()],
+                classes: [...classes.values()],
+                teachers: [...teachers.values()],
+                rooms: [...rooms.values()],
+                subjects: [...subjects.values()],
+                commonGroups: [...commonGroups.values()],
+                interclassGroups: [...interclassGroups.values()],
             },
-            lessons,
-            validationDate,
-            generationDate
+            lessons: lessons.flat().flat(),
+            validFrom: validationDate ?? null,
+            generationDate,
         },
-        htmls
+        htmls,
     };
 }

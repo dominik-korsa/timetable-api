@@ -5,7 +5,6 @@ export interface UnitList {
 }
 
 export interface TimeSlot {
-    index: number;
     name: string;
     beginMinute: number;
     endMinute: number;
@@ -53,7 +52,6 @@ export interface TableData {
     generationDate: string | undefined;
     validationDate: string | undefined;
     timeSlots: TimeSlot[];
-    timeSlotCount: number;
     weekdays: Weekday[];
     lessons: LessonTimeSlot[];
 }
