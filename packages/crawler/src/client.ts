@@ -1,10 +1,10 @@
 import axios, { Axios } from 'axios';
 import { JSDOM } from 'jsdom';
-import { findLinksByKeywords, pageIsOptivum } from './utils.js';
+import { findLinksByKeywords, getEdupageInstanceName, pageIsOptivum } from './utils.js';
 import { parse } from '@timetable-api/optivum-scrapper';
 import { createHash } from 'crypto';
 import { SchoolsTable } from '@timetable-api/common';
-import { getSchoolsWithWebiste, pushOptivumTimetableVersion, pushOptivumTimetableVersionUrl } from './db.js';
+import { getSchoolsWithWebiste, pushEdupageInstances, pushOptivumTimetableVersion, pushOptivumTimetableVersionUrl } from './db.js';
 import { SingleBar } from 'cli-progress';
 
 export async function run() {
@@ -17,13 +17,16 @@ async function checkSchool(school: SchoolsTable & { website_url: string }, axios
     const line = new SingleBar({ format: '[RSPO_ID: {rspo_id}] {status}', noTTYOutput: true });
     line.start(1, 0, { status: 'Getting timetables...', rspo_id: school.rspo_id });
     let optivumTimetables: string[];
+    let edupageInstances: string[];
     try {
-        optivumTimetables = (await findTimetables(school.website_url, axiosInstance)).optivumTimetables;
+        const result = await findTimetables(school.website_url, axiosInstance);
+        optivumTimetables = result.optivumTimetables;
+        edupageInstances = result.edupageInstances;
     } catch {
         return;
     }
     if (optivumTimetables.length !== 0) {
-        line.update(0, { status: 'Parsing timetables and pushing data to database...' });
+        line.update(0, { status: 'Parsing optivum timetables and pushing data to database...' });
     }
     await Promise.allSettled(
         optivumTimetables.map(async (timetableUrl) => {
@@ -33,6 +36,10 @@ async function checkSchool(school: SchoolsTable & { website_url: string }, axios
             await pushOptivumTimetableVersionUrl(timetableUrl, timetableVersion.unique_id, school.rspo_id);
         }),
     );
+    if (edupageInstances.length !== 0) {
+        line.update(0, { status: 'Pushing edupage instances to database...' });
+        await pushEdupageInstances(school.rspo_id, edupageInstances);
+    }
     line.update(0, { status: 'Done!' });
 }
 
@@ -43,12 +50,13 @@ async function findTimetables(
     checkedLinks = new Set<string>(),
 ) {
     const optivumTimetables = new Set<string>();
+    const edupageInstances = new Set<string>();
     let response;
     url = url.replace('://www.', '://');
     try {
         response = await axiosInstance.get<string>(url);
     } catch {
-        return {url, optivumTimetables: []};
+        return {url, optivumTimetables: [], edupageInstances: []};
     }
     checkedLinks.add(url);
     const document = new JSDOM(response.data.replace(/<style(\s|>).*?<\/style>/gi, '')).window.document;
@@ -62,9 +70,12 @@ async function findTimetables(
                 checkedLinks.add(link);
                 const result = await findTimetables(link, axiosInstance, depthLimit - 1, checkedLinks);
                 result.optivumTimetables.map(ttUrl => optivumTimetables.add(ttUrl));
+                result.edupageInstances.map(edupageInstance => edupageInstances.add(edupageInstance))
             }),
         );
     }
     if (pageIsOptivum(document)) optivumTimetables.add(url);
-    return { url, optivumTimetables: [...optivumTimetables] };
+    const edupageInstanceName = getEdupageInstanceName(document);
+    if (edupageInstanceName !== undefined) edupageInstances.add(edupageInstanceName);
+    return { url, optivumTimetables: [...optivumTimetables], edupageInstances:  [...edupageInstances]};
 }
