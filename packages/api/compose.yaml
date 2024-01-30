@@ -1,0 +1,22 @@
+services:
+  server:
+    build:
+      context: .
+      target: final
+      args:
+        - DATABASE_URL
+    environment:
+      - DATABASE_URL
+    networks:
+      - traefik-proxy
+      - default
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.timetable-api.rule=Host(`${TRAEFIK_HOST}`)
+      - traefik.http.routers.timetable-api.entrypoints=https
+      - traefik.http.services.timetable-api.loadbalancer.server.port=3000
+
+networks:
+  traefik-proxy:
+    external: true
+    name: traefik-proxy

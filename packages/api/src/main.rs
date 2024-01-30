@@ -26,7 +26,11 @@ async fn handle_fallback() -> impl IntoResponse {
 
 #[tokio::main]
 async fn main() {
-    dotenv().unwrap();
+    if let Err(error) = dotenv() {
+        if !error.not_found() {
+            panic!("dotenv failed {}", error);
+        }
+    }
 
     let db = Db::new(&env::var("DATABASE_URL").expect("DATABASE_URL env variable should be set"))
         .await
