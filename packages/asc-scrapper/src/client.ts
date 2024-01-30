@@ -66,7 +66,7 @@ export class Client {
     public async getTimetableVersionList(): Promise<TimetableVersionInfo[]> {
         const response = await this.sendRequest<TimetableVersionListRaw>('ttviewer.js', 'getTTViewerData', [
             null,
-            2099,
+            2099, // School year is apparently ignored by edupage
         ]);
         return response.regular.timetables.map((version) => ({
             number: version.tt_num,
