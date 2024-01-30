@@ -136,9 +136,15 @@ export class Client {
                         const termsDefRow = termsDefsTableRows.find(
                             (termsDef) => termsDef.typ === 'one' && termsDef.vals.includes(lessonsRow.terms),
                         );
-                        if (!daysDefRow || !weeksDefRow || !termsDefRow) {
-                            throw Error('Missing daysDefRow or weeksDefRow or termsDefRow');
-                        }
+                        if (!daysDefRow) {
+                            throw Error('Missing daysDefRow');
+                        };
+                        if (!weeksDefRow) {
+                            throw Error('Missing weeksDefRow');
+                        };
+                        if (!termsDefRow) {
+                            throw Error('Missing termsDefRow');
+                        };
                         return {
                             id: cardsRow.id,
                             timeSlotId: cardsRow.period,
