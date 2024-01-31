@@ -1,5 +1,6 @@
 import {
     EdupageInstancesTable,
+    EdupageTimetableVersionsTable,
     OptivumTimetableVersionsTable,
     SchoolsTable,
     TimetableUrlsTable,
@@ -61,7 +62,35 @@ export async function pushOptivumTimetableVersionUrl(url: string, timetableVersi
 }
 
 export async function pushEdupageInstances(rspoId: number, instances: string[]) {
-    await dbClient<EdupageInstancesTable>('edupage_instances').insert(
-        instances.map((instanceName) => ({ school_rspo_id: rspoId, instance_name: instanceName })),
-    );
+    await dbClient<EdupageInstancesTable>('edupage_instances')
+        .insert(instances.map((instanceName) => ({ school_rspo_id: rspoId, instance_name: instanceName })))
+        .onConflict()
+        .ignore();
+}
+
+export const getEdupageInstanceNames = async () =>
+    await dbClient<EdupageInstancesTable>('edupage_instances').distinct().pluck('instance_name');
+
+export async function pushEdupageTimetableVersions(
+    instanceName: string,
+    versions: {
+        number: string;
+        year: number;
+        name: string;
+        dateFrom: string;
+        hidden: boolean;
+        data: unknown;
+    }[],
+) {
+    await dbClient<EdupageTimetableVersionsTable>('edupage_timetable_versions')
+        .insert(
+            versions.map((version) => ({
+                edupage_instance_name: instanceName,
+                number: version.number,
+                date_from: version.dateFrom,
+                data: JSON.stringify(version.data),
+            })),
+        )
+        .onConflict()
+        .ignore();
 }

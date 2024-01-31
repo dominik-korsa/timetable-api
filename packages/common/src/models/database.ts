@@ -39,3 +39,12 @@ export interface EdupageInstancesTable {
     school_rspo_id: number;
     found_on: Date;
 }
+
+export interface EdupageTimetableVersionsTable {
+    id: number;
+    edupage_instance_name: string;
+    number: string;
+    date_from: string;
+    data: string;
+    found_on: Date;
+}

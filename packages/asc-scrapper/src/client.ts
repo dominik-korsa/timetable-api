@@ -1,4 +1,4 @@
-import { Axios, AxiosResponse } from 'axios';
+import { Axios, AxiosInstance, AxiosResponse } from 'axios';
 import {
     BuildingsTableRow,
     CardsTableRow,
@@ -33,6 +33,7 @@ import {
     mapStudentsTableRow,
 } from './mappers.js';
 import { getTableRowsById } from './utils.js';
+import axiosRetry from 'axios-retry';
 
 interface ServerRequestPayload {
     __args: unknown[];
@@ -45,14 +46,16 @@ interface ServerResponse<T> {
 
 export class Client {
     private readonly axios: Axios;
+    private readonly baseURL: string;
 
     constructor(axios: Axios, edupageInstanceId: string) {
         this.axios = axios;
-        this.axios.defaults.baseURL = `https://${edupageInstanceId}.edupage.org/timetable/server`;
+        this.baseURL = `https://${edupageInstanceId}.edupage.org/timetable/server`;
+        axiosRetry(this.axios as AxiosInstance, { retries: 3, retryDelay: (retryCount) => retryCount * 2000 });
     }
 
     private async sendRequest<T>(controller: string, function_: string, args: unknown[]): Promise<T> {
-        const url = `/${controller}?__func=${function_}`;
+        const url = `${this.baseURL}/${controller}?__func=${function_}`;
         const response = await this.axios.post<
             ServerResponse<T>,
             AxiosResponse<ServerResponse<T>, ServerRequestPayload>
@@ -163,5 +166,14 @@ export class Client {
                 })
                 .flat(),
         };
+    }
+
+    public async getAllVersions() {
+        const versionList = await this.getTimetableVersionList();
+        const versions = await Promise.all(versionList.map(async version => {
+            const versionData = await this.getTimetableVersion(version.number);
+            return { data: versionData, ...version}
+        }))
+        return versions;
     }
 }
