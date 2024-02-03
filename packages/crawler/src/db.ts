@@ -24,8 +24,9 @@ const dbClient = knex({
     useNullAsDefault: true,
 });
 
-export const getSchoolsWithWebiste = async () =>
-    await dbClient<SchoolsTable & { website_url: string }>('schools').whereNotNull('website_url');
+export async function getSchoolsWithWebiste() {
+    return await dbClient<SchoolsTable & { website_url: string }>('schools').whereNotNull('website_url');
+}
 
 export async function pushOptivumTimetableVersion(
     parsedTimetable: TimetableVersion,
@@ -68,8 +69,9 @@ export async function pushEdupageInstances(rspoId: number, instances: string[]) 
         .ignore();
 }
 
-export const getEdupageInstanceNames = async () =>
-    await dbClient<EdupageInstancesTable>('edupage_instances').distinct().pluck('instance_name');
+export async function getEdupageInstanceNames() {
+    return await dbClient<EdupageInstancesTable>('edupage_instances').distinct().pluck('instance_name');
+}
 
 export async function pushEdupageTimetableVersions(
     instanceName: string,
