@@ -80,8 +80,8 @@ async function findTimetables(url: string, axiosInstance: Axios, depthLimit = 3,
                 if (checkedLinks.has(link)) return;
                 checkedLinks.add(link);
                 const result = await findTimetables(link, axiosInstance, depthLimit - 1, checkedLinks);
-                result.optivumTimetables.map((ttUrl) => optivumTimetables.add(ttUrl));
-                result.edupageInstances.map((edupageInstance) => edupageInstances.add(edupageInstance));
+                result.optivumTimetables.forEach((ttUrl) => optivumTimetables.add(ttUrl));
+                result.edupageInstances.forEach((edupageInstance) => edupageInstances.add(edupageInstance));
             }),
         );
     }
