@@ -61,7 +61,12 @@ async function checkSchool(school: SchoolsTable & { website_url: string }, axios
     line.update(0, { status: 'Done!' });
 }
 
-async function findTimetables(url: string, axiosInstance: Axios, depthLimit = 3, checkedLinks = new Set<string>()) {
+async function findTimetables(
+    url: string,
+    axiosInstance: Axios,
+    depthLimit = 3,
+    checkedLinks = new Set<string>(),
+): Promise<{ url: string; optivumTimetables: string[]; edupageInstances: string[] }> {
     const optivumTimetables = new Set<string>();
     const edupageInstances = new Set<string>();
     let response;
