@@ -80,12 +80,14 @@ export interface ClassesTableRow {
     teacherid: string;
     color: string;
 }
+
 export interface SubjectsTableRow {
     id: string;
     name: string;
     short: string;
     color: string;
 }
+
 export interface TeachersTableRow {
     id: string;
     firstname: string | undefined;
@@ -95,6 +97,7 @@ export interface TeachersTableRow {
     short: string;
     color: string;
 }
+
 export interface GroupsTableRow {
     id: string;
     name: string;
@@ -103,10 +106,7 @@ export interface GroupsTableRow {
     divisionid: string;
     color: string;
 }
-export interface DivisionsTableRow {
-    id: string;
-    groupids: string[];
-}
+
 export interface StudentsTableRow {
     id: string;
     firstname: string | undefined;
@@ -115,6 +115,7 @@ export interface StudentsTableRow {
     short: string;
     groupids: string[];
 }
+
 export interface LessonsTableRow {
     id: string;
     subjectid: string;
@@ -125,6 +126,7 @@ export interface LessonsTableRow {
     studentids: string[];
     seminargroup: number | null;
 }
+
 export interface CardsTableRow {
     id: string;
     lessonid: string;
@@ -147,7 +149,6 @@ export interface TimetableVersionRaw {
             TimetableVersionDBTable<SubjectsTableRow>,
             TimetableVersionDBTable<TeachersTableRow>,
             TimetableVersionDBTable<GroupsTableRow>,
-            TimetableVersionDBTable<DivisionsTableRow>,
             TimetableVersionDBTable<StudentsTableRow>,
             TimetableVersionDBTable<LessonsTableRow>,
             TimetableVersionDBTable<CardsTableRow>,
