@@ -22,7 +22,7 @@ export async function run() {
     const schools = await getSchoolsWithWebiste();
     await Promise.all(schools.map((school) => checkSchool(school, axiosInstance)));
     const edupageInstanceNames = await getEdupageInstanceNames();
-    edupageInstanceNames.map((instanceName) => checkEdupageInstance(instanceName, axiosInstance));
+    await Promise.all(edupageInstanceNames.map((instanceName) => checkEdupageInstance(instanceName, axiosInstance)));
 }
 
 async function checkEdupageInstance(edupageInstanceName: string, axiosInstance: Axios) {
