@@ -59,9 +59,14 @@ async function checkSchool(school: SchoolsTable & { website_url: string }, axios
     );
     if (edupageInstances.length !== 0) {
         line.update(0, { status: 'Pushing edupage instances to database...' });
-        await pushEdupageInstances(school.rspo_id, edupageInstances);
+        try {
+            await pushEdupageInstances(school.rspo_id, edupageInstances);
+        } catch {
+            line.update(1, { status: 'An error occurred while pushing edupage instances to database.' });
+            return;
+        }
     }
-    line.update(0, { status: 'Done!' });
+    line.update(1, { status: 'Done!' });
 }
 
 async function findTimetables(
