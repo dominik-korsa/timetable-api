@@ -25,6 +25,13 @@ export interface TimetablePeriod {
     short: string;
 }
 
+export interface TimetableBuilding {
+    id: string;
+    name: string;
+    short: string;
+    color: string;
+}
+
 export interface TimetableRoom {
     id: string;
     name: string | null;
@@ -103,6 +110,7 @@ export interface TimetableVersionData {
         days: TimetableDay[];
         weeks: TimetableWeek[];
         periods: TimetablePeriod[];
+        buildings: TimetableBuilding[];
         rooms: TimetableRoom[];
         classes: TimetableClass[];
         subjects: TimetableSubject[];
@@ -110,6 +118,6 @@ export interface TimetableVersionData {
         commonGroups: TimetableCommonGroup[];
         interclassGroups: TimetableInterclassGroup[];
         students: TimetableStudent[];
-    }
+    };
     lessons: TimetableLesson[];
 }
