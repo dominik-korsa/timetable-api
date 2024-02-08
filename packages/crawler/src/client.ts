@@ -41,6 +41,7 @@ async function checkSchool(school: SchoolsTable & { website_url: string }, axios
         optivumTimetables = result.optivumTimetables;
         edupageInstances = result.edupageInstances;
     } catch {
+        line.update(1, { status: 'An error occurred while getting timetables.' });
         return;
     }
     if (optivumTimetables.length !== 0) {
