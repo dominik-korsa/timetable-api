@@ -1,6 +1,5 @@
-import { Axios, AxiosInstance, AxiosResponse } from 'axios';
+import { Axios, AxiosResponse } from 'axios';
 import { AxiosCacheInstance } from 'axios-cache-interceptor';
-import axiosRetry from 'axios-retry';
 import { JSDOM } from 'jsdom';
 import { Table } from './table.js';
 import { UnitList } from './types.js';
@@ -14,7 +13,6 @@ export class Timetable {
     constructor(baseUrl: string, axios: Axios | AxiosCacheInstance) {
         this.baseUrl = baseUrl;
         this.axios = axios;
-        axiosRetry(this.axios as AxiosInstance, { retries: 3, retryDelay: (retryCount) => retryCount * 3000 });
     }
 
     private async getDocument(path: string): Promise<{

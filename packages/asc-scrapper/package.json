@@ -9,8 +9,7 @@
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
-    "@timetable-api/common": "workspace:*",
-    "axios-retry": "^4.0.0"
+    "@timetable-api/common": "workspace:*"
   },
   "type": "module"
 }

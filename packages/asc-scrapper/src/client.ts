@@ -51,7 +51,6 @@ export class Client {
     constructor(axios: Axios, edupageInstanceId: string) {
         this.axios = axios;
         this.baseURL = `https://${edupageInstanceId}.edupage.org/timetable/server`;
-        axiosRetry(this.axios as AxiosInstance, { retries: 3, retryDelay: (retryCount) => retryCount * 2000 });
     }
 
     private async sendRequest<T>(controller: string, function_: string, args: unknown[]): Promise<T> {

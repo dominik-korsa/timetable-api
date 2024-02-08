@@ -1,4 +1,5 @@
 import axios, { Axios } from 'axios';
+import axiosRetry from 'axios-retry';
 import { JSDOM } from 'jsdom';
 import { findLinksByKeywords, getEdupageInstanceName, pageIsOptivum } from './utils.js';
 import { parse } from '@timetable-api/optivum-scrapper';
@@ -17,6 +18,7 @@ import { SingleBar } from 'cli-progress';
 
 export async function run() {
     const axiosInstance = axios.create();
+    axiosRetry(axiosInstance, { retries: 3, retryDelay: (retryCount) => retryCount * 3000 });
     const schools = await getSchoolsWithWebiste();
     await Promise.all(schools.map((school) => checkSchool(school, axiosInstance)));
     const edupageInstanceNames = await getEdupageInstanceNames();
