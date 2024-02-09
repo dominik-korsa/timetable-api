@@ -33,29 +33,35 @@ export interface PeriodsTableRow {
 
 export interface DaysDefsTableRow {
     id: string;
-    name: string;
-    short: string;
-    typ: 'all' | 'any' | 'one';
     vals: string[];
-    val: number | null;
 }
 
 export interface WeeksDefsTableRow {
     id: string;
-    name: string;
-    short: string;
-    typ: 'all' | 'any' | 'one';
     vals: string[];
-    val: number | null;
 }
 
 export interface TermsDefsTableRow {
     id: string;
+    vals: string[];
+}
+
+export interface DaysTableRow {
+    id: string;
     name: string;
     short: string;
-    typ: 'all' | 'any' | 'one';
-    vals: string[];
-    val: number | null;
+}
+
+export interface WeeksTableRow {
+    id: string;
+    name: string;
+    short: string;
+}
+
+export interface TermsTableRow {
+    id: string;
+    name: string;
+    short: string;
 }
 
 export interface BuildingsTableRow {
@@ -141,6 +147,9 @@ export interface TimetableVersionRaw {
             TimetableVersionDBTable<DaysDefsTableRow>,
             TimetableVersionDBTable<WeeksDefsTableRow>,
             TimetableVersionDBTable<TermsDefsTableRow>,
+            TimetableVersionDBTable<DaysTableRow>,
+            TimetableVersionDBTable<WeeksTableRow>,
+            TimetableVersionDBTable<TermsTableRow>,
             TimetableVersionDBTable<BuildingsTableRow>,
             TimetableVersionDBTable<ClassroomsTableRow>,
             TimetableVersionDBTable<ClassesTableRow>,
@@ -185,18 +194,21 @@ export interface Day {
     id: string;
     name: string;
     short: string;
+    value: string;
 }
 
 export interface Week {
     id: string;
     name: string;
     short: string;
+    value: string;
 }
 
 export interface Period {
     id: string;
     name: string;
     short: string;
+    value: string;
 }
 
 export interface Building {

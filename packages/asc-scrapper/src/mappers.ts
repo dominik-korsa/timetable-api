@@ -2,13 +2,10 @@ import {
     ClassesTableRow,
     ClassroomsTableRow,
     Clazz,
-    Day,
-    DaysDefsTableRow,
     Division,
     DivisionsTableRow,
     Group,
     GroupsTableRow,
-    Period,
     PeriodsTableRow,
     Room,
     Student,
@@ -17,10 +14,7 @@ import {
     SubjectsTableRow,
     Teacher,
     TeachersTableRow,
-    TermsDefsTableRow,
     TimeSlot,
-    Week,
-    WeeksDefsTableRow,
 } from './types.js';
 import { parseTime } from './utils.js';
 
@@ -30,24 +24,6 @@ export const mapPeriodsTableRow = (row: PeriodsTableRow): TimeSlot => ({
     short: row.short,
     beginMinute: parseTime(row.starttime),
     endMinute: parseTime(row.endtime),
-});
-
-export const mapDaysDefTableRow = (row: DaysDefsTableRow): Day => ({
-    id: row.id,
-    name: row.name,
-    short: row.short,
-});
-
-export const mapWeeksDefTableRow = (row: WeeksDefsTableRow): Week => ({
-    id: row.id,
-    name: row.name,
-    short: row.short,
-});
-
-export const mapTermsDefTableRow = (row: TermsDefsTableRow): Period => ({
-    id: row.id,
-    name: row.name,
-    short: row.short,
 });
 
 export const mapClassroomsTableRow = (row: ClassroomsTableRow): Room => ({
