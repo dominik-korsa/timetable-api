@@ -49,3 +49,7 @@ export function pageIsOptivum(page: Document) {
     if (content === null) return false;
     return content.includes('programu Plan lekcji Optivum firmy VULCAN') || content.includes('Plan lekcji w szkole');
 }
+
+export function getEdupageInstanceName(page: Document): string | undefined {
+    return /ASC.req_props={"edupage":"(.*?)"/.exec(page.head.innerHTML)?.[1];
+}

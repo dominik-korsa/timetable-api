@@ -1,10 +1,11 @@
-import { Axios, AxiosResponse } from 'axios';
+import { Axios, AxiosInstance, AxiosResponse } from 'axios';
 import {
     BuildingsTableRow,
     CardsTableRow,
     ClassesTableRow,
     ClassroomsTableRow,
     DaysDefsTableRow,
+    DaysTableRow,
     DivisionsTableRow,
     GroupsTableRow,
     LessonsTableRow,
@@ -13,17 +14,16 @@ import {
     SubjectsTableRow,
     TeachersTableRow,
     TermsDefsTableRow,
+    TermsTableRow,
     TimetableVersion,
     TimetableVersionInfo,
     TimetableVersionListRaw,
     TimetableVersionRaw,
     WeeksDefsTableRow,
+    WeeksTableRow,
 } from './types.js';
 import {
     mapPeriodsTableRow,
-    mapDaysDefTableRow,
-    mapWeeksDefTableRow,
-    mapTermsDefTableRow,
     mapClassroomsTableRow,
     mapClassesTableRow,
     mapSubjectsTableRow,
@@ -33,6 +33,7 @@ import {
     mapStudentsTableRow,
 } from './mappers.js';
 import { getTableRowsById } from './utils.js';
+import axiosRetry from 'axios-retry';
 
 interface ServerRequestPayload {
     __args: unknown[];
@@ -45,14 +46,15 @@ interface ServerResponse<T> {
 
 export class Client {
     private readonly axios: Axios;
+    private readonly baseURL: string;
 
     constructor(axios: Axios, edupageInstanceId: string) {
         this.axios = axios;
-        this.axios.defaults.baseURL = `https://${edupageInstanceId}.edupage.org/timetable/server`;
+        this.baseURL = `https://${edupageInstanceId}.edupage.org/timetable/server`;
     }
 
     private async sendRequest<T>(controller: string, function_: string, args: unknown[]): Promise<T> {
-        const url = `/${controller}?__func=${function_}`;
+        const url = `${this.baseURL}/${controller}?__func=${function_}`;
         const response = await this.axios.post<
             ServerResponse<T>,
             AxiosResponse<ServerResponse<T>, ServerRequestPayload>
@@ -91,6 +93,9 @@ export class Client {
         const daysDefsTableRows = getTableRowsById<DaysDefsTableRow>(tables, 'daysdefs');
         const weeksDefsTableRows = getTableRowsById<WeeksDefsTableRow>(tables, 'weeksdefs');
         const termsDefsTableRows = getTableRowsById<TermsDefsTableRow>(tables, 'termsdefs');
+        const daysTableRows = getTableRowsById<DaysTableRow>(tables, 'daysdefs');
+        const weeksTableRows = getTableRowsById<WeeksTableRow>(tables, 'weeksdefs');
+        const termsTableRows = getTableRowsById<TermsTableRow>(tables, 'termsdefs');
         const buildingsTableRows = getTableRowsById<BuildingsTableRow>(tables, 'buildings');
         const classroomsTableRows = getTableRowsById<ClassroomsTableRow>(tables, 'classrooms');
         const classesTableRows = getTableRowsById<ClassesTableRow>(tables, 'classes');
@@ -102,12 +107,31 @@ export class Client {
         const lessonsTableRows = getTableRowsById<LessonsTableRow>(tables, 'lessons');
         const cardsTableRows = getTableRowsById<CardsTableRow>(tables, 'cards');
 
+        const days = daysTableRows.map((day, index) => ({
+            id: day.id,
+            name: day.name,
+            short: day.short,
+            value: daysDefsTableRows[index].vals[0],
+        }));
+        const weeks = weeksTableRows.map((day, index) => ({
+            id: day.id,
+            name: day.name,
+            short: day.short,
+            value: weeksDefsTableRows[index].vals[0],
+        }));
+        const periods = termsTableRows.map((day, index) => ({
+            id: day.id,
+            name: day.name,
+            short: day.short,
+            value: termsDefsTableRows[index].vals[0],
+        }));
+
         return {
             common: {
                 timeSlots: periodsTableRow.map(mapPeriodsTableRow),
-                days: daysDefsTableRows.filter((daysDef) => daysDef.typ === 'one').map(mapDaysDefTableRow),
-                weeks: weeksDefsTableRows.filter((weeksDef) => weeksDef.typ === 'one').map(mapWeeksDefTableRow),
-                periods: termsDefsTableRows.filter((termsDef) => termsDef.typ === 'one').map(mapTermsDefTableRow),
+                days,
+                weeks,
+                periods,
                 buildings: buildingsTableRows,
                 rooms: classroomsTableRows.map(mapClassroomsTableRow),
                 classes: classesTableRows.map(mapClassesTableRow),
@@ -127,35 +151,35 @@ export class Client {
                             cardsRow.weeks !== '',
                     );
                     return cards.map((cardsRow) => {
-                        const daysDefRow = daysDefsTableRows.find(
-                            (daysDef) => daysDef.typ === 'one' && daysDef.vals.includes(cardsRow.days),
+                        const day = days.find(
+                            (day) => day.value === cardsRow.days,
                         );
-                        const weeksDefRow = weeksDefsTableRows.find(
-                            (weeksDef) => weeksDef.typ === 'one' && weeksDef.vals.includes(cardsRow.weeks),
+                        const week = weeks.find(
+                            (week) => week.value === cardsRow.weeks,
                         );
-                        const termsDefRow = termsDefsTableRows.find(
-                            (termsDef) => termsDef.typ === 'one' && termsDef.vals.includes(lessonsRow.terms),
+                        const period = periods.find(
+                            (term) => term.value === lessonsRow.terms,
                         );
-                        if (!daysDefRow) {
-                            throw Error('Missing daysDefRow');
-                        };
-                        if (!weeksDefRow) {
-                            throw Error('Missing weeksDefRow');
-                        };
-                        if (!termsDefRow) {
-                            throw Error('Missing termsDefRow');
-                        };
+                        if (!day) {
+                            throw Error('Missing day');
+                        }
+                        if (!week) {
+                            throw Error('Missing week');
+                        }
+                        if (!period) {
+                            throw Error('Missing period');
+                        }
                         return {
                             id: cardsRow.id,
                             timeSlotId: cardsRow.period,
-                            dayId: daysDefRow.id,
-                            weekId: weeksDefRow.id,
+                            dayId: day.id,
+                            weekId: week.id,
                             subjectId: lessonsRow.subjectid,
                             teacherIds: lessonsRow.teacherids,
                             roomIds: cardsRow.classroomids,
                             groupIds: lessonsRow.groupids,
                             classIds: lessonsRow.classids,
-                            periodId: termsDefRow.id,
+                            periodId: period.id,
                             seminarGroup: lessonsRow.seminargroup,
                             studentIds: lessonsRow.studentids,
                         };
@@ -163,5 +187,14 @@ export class Client {
                 })
                 .flat(),
         };
+    }
+
+    public async getAllVersions() {
+        const versionList = await this.getTimetableVersionList();
+        const versions = await Promise.all(versionList.map(async version => {
+            const versionData = await this.getTimetableVersion(version.number);
+            return { data: versionData, ...version}
+        }))
+        return versions;
     }
 }
