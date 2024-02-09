@@ -27,29 +27,7 @@ export async function parse(url: string, axiosInstance: Axios): Promise<Timetabl
 
     if (unitsIds.classIds.length === 0 && unitsIds.roomIds.length === 0 && unitsIds.teacherIds.length === 0)
         throw new Error('No unit IDs found');
-    const [classTables, teacherTables, roomTables] = await Promise.all([
-        Promise.all(
-            unitsIds.classIds.map(async (classId) => ({
-                symbol: 'o' as const,
-                id: classId,
-                table: await timetable.getTable('o', classId),
-            })),
-        ),
-        Promise.all(
-            unitsIds.teacherIds.map(async (teacherId) => ({
-                symbol: 'n' as const,
-                id: teacherId,
-                table: await timetable.getTable('n', teacherId),
-            })),
-        ),
-        Promise.all(
-            unitsIds.roomIds.map(async (roomId) => ({
-                symbol: 's' as const,
-                id: roomId,
-                table: await timetable.getTable('s', roomId),
-            })),
-        ),
-    ]);
+    const [classTables, teacherTables, roomTables] = await timetable.getUnits();
     const units = [...classTables, ...teacherTables, ...roomTables];
     const weekdays = units[0].table.getWeekdays();
     const generationDate = units[0].table.getGenerationDate();

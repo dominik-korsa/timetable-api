@@ -37,6 +37,38 @@ export class Timetable {
         return new Table(response);
     }
 
+    public async getUnits(): Promise<{
+        symbol: "o" | 'n' | 's';
+        id: number;
+        table: Table;
+    }[][]> {
+        const unitsIds = await this.getUnitIds();
+        const [classTables, teacherTables, roomTables] = await Promise.all([
+        Promise.all(
+            unitsIds.classIds.map(async (classId) => ({
+                symbol: 'o' as const,
+                id: classId,
+                table: await this.getTable('o', classId),
+            })),
+        ),
+        Promise.all(
+            unitsIds.teacherIds.map(async (teacherId) => ({
+                symbol: 'n' as const,
+                id: teacherId,
+                table: await this.getTable('n', teacherId),
+            })),
+        ),
+        Promise.all(
+            unitsIds.roomIds.map(async (roomId) => ({
+                symbol: 's' as const,
+                id: roomId,
+                table: await this.getTable('s', roomId),
+            })),
+        ),
+        ]);
+        return [ classTables, teacherTables, roomTables ]
+    }
+
     public async getUnitIds(): Promise<UnitList> {
         const { response, responseUrl } = await this.getDocument(this.baseUrl);
         this.baseUrl = responseUrl;
