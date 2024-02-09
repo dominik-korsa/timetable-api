@@ -33,29 +33,17 @@ export interface PeriodsTableRow {
 
 export interface DaysDefsTableRow {
     id: string;
-    name: string;
-    short: string;
-    typ: 'all' | 'any' | 'one';
     vals: string[];
-    val: number | null;
 }
 
 export interface WeeksDefsTableRow {
     id: string;
-    name: string;
-    short: string;
-    typ: 'all' | 'any' | 'one';
     vals: string[];
-    val: number | null;
 }
 
 export interface TermsDefsTableRow {
     id: string;
-    name: string;
-    short: string;
-    typ: 'all' | 'any' | 'one';
     vals: string[];
-    val: number | null;
 }
 
 export interface BuildingsTableRow {
