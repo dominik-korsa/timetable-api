@@ -46,6 +46,24 @@ export interface TermsDefsTableRow {
     vals: string[];
 }
 
+export interface DaysTableRow {
+    id: string;
+    name: string;
+    short: string;
+}
+
+export interface WeeksTableRow {
+    id: string;
+    name: string;
+    short: string;
+}
+
+export interface TermsTableRow {
+    id: string;
+    name: string;
+    short: string;
+}
+
 export interface BuildingsTableRow {
     id: string;
     name: string;
@@ -129,6 +147,9 @@ export interface TimetableVersionRaw {
             TimetableVersionDBTable<DaysDefsTableRow>,
             TimetableVersionDBTable<WeeksDefsTableRow>,
             TimetableVersionDBTable<TermsDefsTableRow>,
+            TimetableVersionDBTable<DaysTableRow>,
+            TimetableVersionDBTable<WeeksTableRow>,
+            TimetableVersionDBTable<TermsTableRow>,
             TimetableVersionDBTable<BuildingsTableRow>,
             TimetableVersionDBTable<ClassroomsTableRow>,
             TimetableVersionDBTable<ClassesTableRow>,
