@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "@timetable-api/common": "workspace:*",
-    "axios-retry": "^4.0.0",
     "jsdom": "^22.1.0"
   },
   "type": "module",

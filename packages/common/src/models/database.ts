@@ -32,3 +32,19 @@ export interface TimetableUrlsTable {
     last_check_at: Date;
     url: string;
 }
+
+export interface EdupageInstancesTable {
+    id: number;
+    instance_name: string;
+    school_rspo_id: number;
+    found_on: Date;
+}
+
+export interface EdupageTimetableVersionsTable {
+    id: number;
+    edupage_instance_name: string;
+    number: string;
+    date_from: string;
+    data: string;
+    found_on: Date;
+}
