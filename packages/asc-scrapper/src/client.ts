@@ -6,6 +6,7 @@ import {
     ClassroomsTableRow,
     DaysDefsTableRow,
     DaysTableRow,
+    DivisionsTableRow,
     GroupsTableRow,
     LessonsTableRow,
     PeriodsTableRow,
@@ -14,6 +15,7 @@ import {
     TeachersTableRow,
     TermsDefsTableRow,
     TermsTableRow,
+    TimetableVersion,
     TimetableVersionInfo,
     TimetableVersionListRaw,
     TimetableVersionRaw,
@@ -27,13 +29,11 @@ import {
     mapSubjectsTableRow,
     mapTeachersTableRow,
     mapGroupsTableRow,
+    mapDivisionsTableRow,
     mapStudentsTableRow,
-    mapDaysTableRow,
-    mapWeeksTableRow,
-    mapTermsTableRow,
 } from './mappers.js';
 import { getTableRowsById } from './utils.js';
-import { TimetableVersionData, slugify } from '@timetable-api/common';
+import axiosRetry from 'axios-retry';
 
 interface ServerRequestPayload {
     __args: unknown[];
@@ -79,7 +79,7 @@ export class Client {
         }));
     }
 
-    public async getTimetableVersion(number: string): Promise<TimetableVersionData> {
+    public async getTimetableVersion(number: string): Promise<TimetableVersion> {
         const response = await this.sendRequest<TimetableVersionRaw>('regulartt.js', 'regularttGetData', [
             null,
             number,
@@ -87,7 +87,7 @@ export class Client {
         return this.parseTimetableVersion(response);
     }
 
-    private parseTimetableVersion(raw: TimetableVersionRaw): TimetableVersionData {
+    private parseTimetableVersion(raw: TimetableVersionRaw): TimetableVersion {
         const tables = raw.dbiAccessorRes.tables;
         const periodsTableRow = getTableRowsById<PeriodsTableRow>(tables, 'periods');
         const daysDefsTableRows = getTableRowsById<DaysDefsTableRow>(tables, 'daysdefs');
@@ -102,23 +102,43 @@ export class Client {
         const subjectsTableRows = getTableRowsById<SubjectsTableRow>(tables, 'subjects');
         const teachersTableRows = getTableRowsById<TeachersTableRow>(tables, 'teachers');
         const groupsTableRows = getTableRowsById<GroupsTableRow>(tables, 'groups');
+        const divisionsTableRows = getTableRowsById<DivisionsTableRow>(tables, 'divisions');
         const studentsTableRows = getTableRowsById<StudentsTableRow>(tables, 'students');
         const lessonsTableRows = getTableRowsById<LessonsTableRow>(tables, 'lessons');
         const cardsTableRows = getTableRowsById<CardsTableRow>(tables, 'cards');
 
+        const days = daysTableRows.map((day, index) => ({
+            id: day.id,
+            name: day.name,
+            short: day.short,
+            value: daysDefsTableRows[index].vals[0],
+        }));
+        const weeks = weeksTableRows.map((day, index) => ({
+            id: day.id,
+            name: day.name,
+            short: day.short,
+            value: weeksDefsTableRows[index].vals[0],
+        }));
+        const periods = termsTableRows.map((day, index) => ({
+            id: day.id,
+            name: day.name,
+            short: day.short,
+            value: termsDefsTableRows[index].vals[0],
+        }));
+
         return {
             common: {
                 timeSlots: periodsTableRow.map(mapPeriodsTableRow),
-                days: daysTableRows.map(mapDaysTableRow),
-                weeks: weeksTableRows.map(mapWeeksTableRow),
-                periods: termsTableRows.map(mapTermsTableRow),
+                days,
+                weeks,
+                periods,
                 buildings: buildingsTableRows,
                 rooms: classroomsTableRows.map(mapClassroomsTableRow),
                 classes: classesTableRows.map(mapClassesTableRow),
                 subjects: subjectsTableRows.map(mapSubjectsTableRow),
                 teachers: teachersTableRows.map(mapTeachersTableRow),
-                commonGroups: groupsTableRows.map(mapGroupsTableRow),
-                interclassGroups: [],
+                groups: groupsTableRows.map(mapGroupsTableRow),
+                divisions: divisionsTableRows.map(mapDivisionsTableRow),
                 students: studentsTableRows.map(mapStudentsTableRow),
             },
             lessons: lessonsTableRows
@@ -162,7 +182,6 @@ export class Client {
                             periodId: period.id,
                             seminarGroup: lessonsRow.seminargroup,
                             studentIds: lessonsRow.studentids,
-                            interclassGroupId: null
                         };
                     });
                 })
