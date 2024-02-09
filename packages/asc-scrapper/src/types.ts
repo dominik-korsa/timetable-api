@@ -194,18 +194,21 @@ export interface Day {
     id: string;
     name: string;
     short: string;
+    value: string;
 }
 
 export interface Week {
     id: string;
     name: string;
     short: string;
+    value: string;
 }
 
 export interface Period {
     id: string;
     name: string;
     short: string;
+    value: string;
 }
 
 export interface Building {
