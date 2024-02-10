@@ -104,8 +104,13 @@ export class Client {
         const groupsTableRows = getTableRowsById<GroupsTableRow>(tables, 'groups');
         const studentsTableRows = getTableRowsById<StudentsTableRow>(tables, 'students');
         const lessonsTableRows = getTableRowsById<LessonsTableRow>(tables, 'lessons');
-        const cardsTableRows = getTableRowsById<CardsTableRow>(tables, 'cards');
-
+        const cardsTableRows = getTableRowsById<CardsTableRow>(tables, 'cards')
+        const lessonsCards = new Map<string, CardsTableRow[]>();
+        cardsTableRows.forEach(card => {
+            if (card.period === '' || card.days === '' || card.weeks === '') return;
+            const existingLessonsCardsItem = lessonsCards.get(card.lessonid);
+            if (existingLessonsCardsItem) existingLessonsCardsItem.push(card); else lessonsCards.set(card.lessonid, [card]);
+        })
         return {
             common: {
                 timeSlots: periodsTableRow.map(mapPeriodsTableRow),
@@ -123,13 +128,7 @@ export class Client {
             },
             lessons: lessonsTableRows
                 .map((lessonsRow) => {
-                    const cards = cardsTableRows.filter(
-                        (cardsRow) =>
-                            cardsRow.lessonid === lessonsRow.id &&
-                            cardsRow.period !== '' &&
-                            cardsRow.days !== '' &&
-                            cardsRow.weeks !== '',
-                    );
+                    const cards = lessonsCards.get(lessonsRow.id) ?? [];
                     return cards.map((cardsRow) => {
                         const daysDef = daysDefsTableRows.find(daysDefsRow => daysDefsRow.vals.includes(cardsRow.days) && daysDefsRow.vals.length === 1);
                         const weeksDef = weeksDefsTableRows.find(
