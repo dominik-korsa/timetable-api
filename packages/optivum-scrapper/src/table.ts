@@ -1,7 +1,7 @@
 import { slugify } from '@timetable-api/common';
 import { parseLesson, parseTime, splitByBr } from './utils.js';
 import { JSDOM } from 'jsdom';
-import { LessonTimeSlot, TableData, TimeSlot, Day } from './types.js';
+import { LessonTimeSlot, TableData, TimeSlot, Weekday } from './types.js';
 
 export class Table {
     private readonly document;
@@ -30,7 +30,7 @@ export class Table {
         niedziela: 7,
     };
 
-    public getFullName = (): string => this.document.querySelector('span.tytulnapis')?.textContent ?? '';
+    public getFullName = (): string => this.document.querySelector('span.tytulnapis')?.textContent ?? '';  
 
     public getHtml = (): string => this.document.body.innerHTML;
 
@@ -56,13 +56,13 @@ export class Table {
         });
     }
 
-    public getDays(): Day[] {
-        return [...this.mainTable.querySelectorAll('tr:first-of-type > th:nth-child(n+3)')].map((day, index) => {
-            const dayName = day.textContent?.trim() ?? '-';
+    public getWeekdays(): Weekday[] {
+        return [...this.mainTable.querySelectorAll('tr:first-of-type > th:nth-child(n+3)')].map((weekday, index) => {
+            const weekdayName = weekday.textContent?.trim() ?? '-';
             return {
                 index,
-                name: dayName,
-                isoNumber: Table.weekdayIsoNumber[slugify(dayName)],
+                name: weekdayName,
+                isoNumber: Table.weekdayIsoNumber[slugify(weekdayName)],
             };
         });
     }
@@ -70,11 +70,11 @@ export class Table {
     public getLessons(): LessonTimeSlot[] {
         const lessons: LessonTimeSlot[] = [];
         this.rows.forEach((row, timeSlotIndex) => {
-            row.querySelectorAll('.l').forEach((lessonTag, dayIndex) => {
+            row.querySelectorAll('.l').forEach((lessonTag, weekdayIndex) => {
                 const groups = splitByBr(lessonTag)
                     .map((groupDocument) => ({
                         timeSlotIndex,
-                        dayIndex,
+                        weekdayIndex,
                         lesson: parseLesson(groupDocument),
                     }))
                     .filter(
@@ -93,7 +93,7 @@ export class Table {
             generationDate: this.getGenerationDate(),
             validationDate: this.getValidationDate(),
             timeSlots: this.getTimeSlots(),
-            days: this.getDays(),
+            weekdays: this.getWeekdays(),
             lessons: this.getLessons(),
         };
     }

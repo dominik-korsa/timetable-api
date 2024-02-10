@@ -10,7 +10,7 @@ export interface TimeSlot {
     endMinute: number;
 }
 
-export interface Day {
+export interface Weekday {
     index: number;
     name: string;
     isoNumber: number;
@@ -43,7 +43,7 @@ export type Lesson = {
 
 export interface LessonTimeSlot {
     lesson: Lesson;
-    dayIndex: number;
+    weekdayIndex: number;
     timeSlotIndex: number;
 }
 
@@ -52,6 +52,6 @@ export interface TableData {
     generationDate: string | undefined;
     validationDate: string | undefined;
     timeSlots: TimeSlot[];
-    days: Day[];
+    weekdays: Weekday[];
     lessons: LessonTimeSlot[];
 }
