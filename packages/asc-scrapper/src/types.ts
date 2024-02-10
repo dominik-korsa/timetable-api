@@ -86,12 +86,14 @@ export interface ClassesTableRow {
     teacherid: string;
     color: string;
 }
+
 export interface SubjectsTableRow {
     id: string;
     name: string;
     short: string;
     color: string;
 }
+
 export interface TeachersTableRow {
     id: string;
     firstname: string | undefined;
@@ -101,6 +103,7 @@ export interface TeachersTableRow {
     short: string;
     color: string;
 }
+
 export interface GroupsTableRow {
     id: string;
     name: string;
@@ -109,10 +112,7 @@ export interface GroupsTableRow {
     divisionid: string;
     color: string;
 }
-export interface DivisionsTableRow {
-    id: string;
-    groupids: string[];
-}
+
 export interface StudentsTableRow {
     id: string;
     firstname: string | undefined;
@@ -121,6 +121,7 @@ export interface StudentsTableRow {
     short: string;
     groupids: string[];
 }
+
 export interface LessonsTableRow {
     id: string;
     subjectid: string;
@@ -131,6 +132,7 @@ export interface LessonsTableRow {
     studentids: string[];
     seminargroup: number | null;
 }
+
 export interface CardsTableRow {
     id: string;
     lessonid: string;
@@ -156,135 +158,9 @@ export interface TimetableVersionRaw {
             TimetableVersionDBTable<SubjectsTableRow>,
             TimetableVersionDBTable<TeachersTableRow>,
             TimetableVersionDBTable<GroupsTableRow>,
-            TimetableVersionDBTable<DivisionsTableRow>,
             TimetableVersionDBTable<StudentsTableRow>,
             TimetableVersionDBTable<LessonsTableRow>,
             TimetableVersionDBTable<CardsTableRow>,
         ];
     };
-}
-
-export interface TimetableVersion {
-    common: {
-        timeSlots: TimeSlot[];
-        days: Day[];
-        weeks: Week[];
-        periods: Period[];
-        buildings: Building[];
-        rooms: Room[];
-        classes: Clazz[];
-        subjects: Subject[];
-        teachers: Teacher[];
-        groups: Group[];
-        divisions: Division[];
-        students: Student[];
-    };
-    lessons: Lesson[];
-}
-
-export interface TimeSlot {
-    id: string;
-    name: string;
-    short: string;
-    beginMinute: number;
-    endMinute: number;
-}
-
-export interface Day {
-    id: string;
-    name: string;
-    short: string;
-    value: string;
-}
-
-export interface Week {
-    id: string;
-    name: string;
-    short: string;
-    value: string;
-}
-
-export interface Period {
-    id: string;
-    name: string;
-    short: string;
-    value: string;
-}
-
-export interface Building {
-    id: string;
-    name: string;
-    short: string;
-    color: string;
-}
-
-export interface Room {
-    id: string;
-    name: string;
-    short: string;
-    buildingId: string | null;
-    color: string;
-}
-
-export interface Clazz {
-    id: string;
-    name: string;
-    short: string;
-    teacherId: string | null;
-    color: string;
-}
-
-export interface Subject {
-    id: string;
-    name: string;
-    short: string;
-    color: string;
-}
-
-export interface Teacher {
-    id: string;
-    short: string;
-    firstName: string | null;
-    lastName: string | null;
-    namePrefix: string | null;
-    nameSuffix: string | null;
-    color: string;
-}
-
-export interface Group {
-    id: string;
-    name: string;
-    classId: string;
-    entireClass: boolean;
-    divisionId: string;
-    color: string;
-}
-
-export interface Division {
-    id: string;
-    groupIds: string[];
-}
-
-export interface Student {
-    id: string;
-    short: string;
-    firstName: string | null;
-    lastName: string | null;
-    classId: string;
-    groupIds: string[];
-}
-
-export interface Lesson {
-    id: string;
-    timeSlotId: string;
-    dayId: string;
-    weekId: string;
-    subjectId: string;
-    teacherIds: string[];
-    roomIds: string[];
-    groupIds: string[];
-    classIds: string[];
-    periodId: string;
-    seminarGroup: number | null;
-    studentIds: string[];
 }

@@ -1,4 +1,4 @@
-import { Axios, AxiosInstance, AxiosResponse } from 'axios';
+import { Axios, AxiosResponse } from 'axios';
 import {
     BuildingsTableRow,
     CardsTableRow,
@@ -6,7 +6,6 @@ import {
     ClassroomsTableRow,
     DaysDefsTableRow,
     DaysTableRow,
-    DivisionsTableRow,
     GroupsTableRow,
     LessonsTableRow,
     PeriodsTableRow,
@@ -15,7 +14,6 @@ import {
     TeachersTableRow,
     TermsDefsTableRow,
     TermsTableRow,
-    TimetableVersion,
     TimetableVersionInfo,
     TimetableVersionListRaw,
     TimetableVersionRaw,
@@ -29,11 +27,13 @@ import {
     mapSubjectsTableRow,
     mapTeachersTableRow,
     mapGroupsTableRow,
-    mapDivisionsTableRow,
     mapStudentsTableRow,
+    mapDaysTableRow,
+    mapWeeksTableRow,
+    mapTermsTableRow,
 } from './mappers.js';
 import { getTableRowsById } from './utils.js';
-import axiosRetry from 'axios-retry';
+import { TimetableVersionData } from '@timetable-api/common';
 
 interface ServerRequestPayload {
     __args: unknown[];
@@ -79,7 +79,7 @@ export class Client {
         }));
     }
 
-    public async getTimetableVersion(number: string): Promise<TimetableVersion> {
+    public async getTimetableVersion(number: string): Promise<TimetableVersionData> {
         const response = await this.sendRequest<TimetableVersionRaw>('regulartt.js', 'regularttGetData', [
             null,
             number,
@@ -87,101 +87,79 @@ export class Client {
         return this.parseTimetableVersion(response);
     }
 
-    private parseTimetableVersion(raw: TimetableVersionRaw): TimetableVersion {
+    private parseTimetableVersion(raw: TimetableVersionRaw): TimetableVersionData {
         const tables = raw.dbiAccessorRes.tables;
         const periodsTableRow = getTableRowsById<PeriodsTableRow>(tables, 'periods');
         const daysDefsTableRows = getTableRowsById<DaysDefsTableRow>(tables, 'daysdefs');
         const weeksDefsTableRows = getTableRowsById<WeeksDefsTableRow>(tables, 'weeksdefs');
         const termsDefsTableRows = getTableRowsById<TermsDefsTableRow>(tables, 'termsdefs');
-        const daysTableRows = getTableRowsById<DaysTableRow>(tables, 'daysdefs');
-        const weeksTableRows = getTableRowsById<WeeksTableRow>(tables, 'weeksdefs');
-        const termsTableRows = getTableRowsById<TermsTableRow>(tables, 'termsdefs');
+        const daysTableRows = getTableRowsById<DaysTableRow>(tables, 'days');
+        const weeksTableRows = getTableRowsById<WeeksTableRow>(tables, 'weeks');
+        const termsTableRows = getTableRowsById<TermsTableRow>(tables, 'terms');
         const buildingsTableRows = getTableRowsById<BuildingsTableRow>(tables, 'buildings');
         const classroomsTableRows = getTableRowsById<ClassroomsTableRow>(tables, 'classrooms');
         const classesTableRows = getTableRowsById<ClassesTableRow>(tables, 'classes');
         const subjectsTableRows = getTableRowsById<SubjectsTableRow>(tables, 'subjects');
         const teachersTableRows = getTableRowsById<TeachersTableRow>(tables, 'teachers');
         const groupsTableRows = getTableRowsById<GroupsTableRow>(tables, 'groups');
-        const divisionsTableRows = getTableRowsById<DivisionsTableRow>(tables, 'divisions');
         const studentsTableRows = getTableRowsById<StudentsTableRow>(tables, 'students');
         const lessonsTableRows = getTableRowsById<LessonsTableRow>(tables, 'lessons');
-        const cardsTableRows = getTableRowsById<CardsTableRow>(tables, 'cards');
-
-        const days = daysTableRows.map((day, index) => ({
-            id: day.id,
-            name: day.name,
-            short: day.short,
-            value: daysDefsTableRows[index].vals[0],
-        }));
-        const weeks = weeksTableRows.map((day, index) => ({
-            id: day.id,
-            name: day.name,
-            short: day.short,
-            value: weeksDefsTableRows[index].vals[0],
-        }));
-        const periods = termsTableRows.map((day, index) => ({
-            id: day.id,
-            name: day.name,
-            short: day.short,
-            value: termsDefsTableRows[index].vals[0],
-        }));
-
+        const cardsTableRows = getTableRowsById<CardsTableRow>(tables, 'cards')
+        const lessonsCards = new Map<string, CardsTableRow[]>();
+        cardsTableRows.forEach(card => {
+            if (card.period === '' || card.days === '' || card.weeks === '') return;
+            const existingLessonsCardsItem = lessonsCards.get(card.lessonid);
+            if (existingLessonsCardsItem) existingLessonsCardsItem.push(card); else lessonsCards.set(card.lessonid, [card]);
+        })
         return {
             common: {
                 timeSlots: periodsTableRow.map(mapPeriodsTableRow),
-                days,
-                weeks,
-                periods,
+                days: daysTableRows.map(mapDaysTableRow),
+                weeks: weeksTableRows.map(mapWeeksTableRow),
+                periods: termsTableRows.map(mapTermsTableRow),
                 buildings: buildingsTableRows,
                 rooms: classroomsTableRows.map(mapClassroomsTableRow),
                 classes: classesTableRows.map(mapClassesTableRow),
                 subjects: subjectsTableRows.map(mapSubjectsTableRow),
                 teachers: teachersTableRows.map(mapTeachersTableRow),
-                groups: groupsTableRows.map(mapGroupsTableRow),
-                divisions: divisionsTableRows.map(mapDivisionsTableRow),
+                commonGroups: groupsTableRows.map(mapGroupsTableRow),
+                interclassGroups: [],
                 students: studentsTableRows.map(mapStudentsTableRow),
             },
             lessons: lessonsTableRows
                 .map((lessonsRow) => {
-                    const cards = cardsTableRows.filter(
-                        (cardsRow) =>
-                            cardsRow.lessonid === lessonsRow.id &&
-                            cardsRow.period !== '' &&
-                            cardsRow.days !== '' &&
-                            cardsRow.weeks !== '',
-                    );
+                    const cards = lessonsCards.get(lessonsRow.id) ?? [];
                     return cards.map((cardsRow) => {
-                        const day = days.find(
-                            (day) => day.value === cardsRow.days,
+                        const daysDef = daysDefsTableRows.find(daysDefsRow => daysDefsRow.vals.length === 1 && daysDefsRow.vals[0] === cardsRow.days);
+                        const weeksDef = weeksDefsTableRows.find(
+                            (weeksDefsRow) => weeksDefsRow.vals.length === 1 && weeksDefsRow.vals[0] === cardsRow.weeks,
                         );
-                        const week = weeks.find(
-                            (week) => week.value === cardsRow.weeks,
+                        const termsDef = termsDefsTableRows.find(
+                            (termsDefsRow) => termsDefsRow.vals.length === 1 && termsDefsRow.vals[0] === lessonsRow.terms,
                         );
-                        const period = periods.find(
-                            (term) => term.value === lessonsRow.terms,
-                        );
-                        if (!day) {
-                            throw Error('Missing day');
+                        if (!daysDef) {
+                            throw Error('Missing daysDef');
                         }
-                        if (!week) {
-                            throw Error('Missing week');
+                        if (!weeksDef) {
+                            throw Error('Missing weeksDef');
                         }
-                        if (!period) {
-                            throw Error('Missing period');
+                        if (!termsDef) {
+                            throw Error('Missing termsDef');
                         }
                         return {
                             id: cardsRow.id,
                             timeSlotId: cardsRow.period,
-                            dayId: day.id,
-                            weekId: week.id,
+                            dayId: daysTableRows[daysDefsTableRows.indexOf(daysDef)].id,
+                            weekId: weeksTableRows[weeksDefsTableRows.indexOf(weeksDef)].id,
                             subjectId: lessonsRow.subjectid,
                             teacherIds: lessonsRow.teacherids,
                             roomIds: cardsRow.classroomids,
                             groupIds: lessonsRow.groupids,
                             classIds: lessonsRow.classids,
-                            periodId: period.id,
+                            periodId: termsTableRows[termsDefsTableRows.indexOf(termsDef)].id,
                             seminarGroup: lessonsRow.seminargroup,
                             studentIds: lessonsRow.studentids,
+                            interclassGroupId: null,
                         };
                     });
                 })

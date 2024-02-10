@@ -1,24 +1,41 @@
 import {
+    TimetableClass,
+    TimetableCommonGroup,
+    TimetableDay,
+    TimetablePeriod,
+    TimetableRoom,
+    TimetableStudent,
+    TimetableSubject,
+    TimetableTeacher,
+    TimetableTimeSlot,
+    TimetableWeek,
+    slugify,
+} from '@timetable-api/common';
+import {
     ClassesTableRow,
     ClassroomsTableRow,
-    Clazz,
-    Division,
-    DivisionsTableRow,
-    Group,
+    DaysTableRow,
     GroupsTableRow,
     PeriodsTableRow,
-    Room,
-    Student,
     StudentsTableRow,
-    Subject,
     SubjectsTableRow,
-    Teacher,
     TeachersTableRow,
-    TimeSlot,
+    TermsTableRow,
+    WeeksTableRow,
 } from './types.js';
 import { parseTime } from './utils.js';
 
-export const mapPeriodsTableRow = (row: PeriodsTableRow): TimeSlot => ({
+const weekdayIsoNumber: Partial<Record<string, number>> = {
+    poniedzialek: 1,
+    wtorek: 2,
+    sroda: 3,
+    czwartek: 4,
+    piatek: 5,
+    sobota: 6,
+    niedziela: 7,
+};
+
+export const mapPeriodsTableRow = (row: PeriodsTableRow): TimetableTimeSlot => ({
     id: row.id,
     name: row.name,
     short: row.short,
@@ -26,58 +43,74 @@ export const mapPeriodsTableRow = (row: PeriodsTableRow): TimeSlot => ({
     endMinute: parseTime(row.endtime),
 });
 
-export const mapClassroomsTableRow = (row: ClassroomsTableRow): Room => ({
+export const mapDaysTableRow = (row: DaysTableRow): TimetableDay => ({
     id: row.id,
     name: row.name,
     short: row.short,
+    isoNumber: weekdayIsoNumber[slugify(row.name)] ?? null,
+});
+
+export const mapWeeksTableRow = (row: WeeksTableRow): TimetableWeek => ({
+    id: row.id,
+    name: row.name,
+    short: row.short,
+});
+
+export const mapTermsTableRow = (row: TermsTableRow): TimetablePeriod => ({
+    id: row.id,
+    name: row.name,
+    short: row.short,
+});
+
+export const mapClassroomsTableRow = (row: ClassroomsTableRow): TimetableRoom => ({
+    id: row.id,
+    name: row.name,
+    short: row.short,
+    fullName: `${row.short} ${row.name}`,
     buildingId: row.buildingid === '' ? null : row.buildingid,
     color: row.color,
 });
 
-export const mapClassesTableRow = (row: ClassesTableRow): Clazz => ({
+export const mapClassesTableRow = (row: ClassesTableRow): TimetableClass => ({
     id: row.id,
     name: row.name,
     short: row.short,
+    fullName: `${row.short} ${row.name}`,
     teacherId: row.teacherid === '' ? null : row.teacherid,
     color: row.color,
 });
 
-export const mapSubjectsTableRow = (row: SubjectsTableRow): Subject => ({
+export const mapSubjectsTableRow = (row: SubjectsTableRow): TimetableSubject => ({
     id: row.id,
     name: row.name,
     short: row.short,
     color: row.color,
 });
 
-export const mapTeachersTableRow = (row: TeachersTableRow): Teacher => ({
+export const mapTeachersTableRow = (row: TeachersTableRow): TimetableTeacher => ({
     id: row.id,
     short: row.short,
-    firstName: row.firstname ?? null,
-    lastName: row.lastname ?? null,
-    namePrefix: row.nameprefix ?? null,
-    nameSuffix: row.namesuffix ?? null,
+    name: row.firstname !== undefined && row.lastname !== undefined ? `${row.firstname} ${row.lastname}` : null,
+    fullName:
+        row.firstname !== undefined && row.lastname !== undefined
+            ? `${row.firstname} ${row.lastname} (${row.short})`
+            : row.short,
     color: row.color,
 });
 
-export const mapGroupsTableRow = (row: GroupsTableRow): Group => ({
+export const mapGroupsTableRow = (row: GroupsTableRow): TimetableCommonGroup => ({
     id: row.id,
-    name: row.name,
+    short: row.name,
     classId: row.classid,
     entireClass: row.entireclass,
-    divisionId: row.divisionid,
     color: row.color,
+    subjectId: null,
 });
 
-export const mapDivisionsTableRow = (row: DivisionsTableRow): Division => ({
-    id: row.id,
-    groupIds: row.groupids,
-});
-
-export const mapStudentsTableRow = (row: StudentsTableRow): Student => ({
+export const mapStudentsTableRow = (row: StudentsTableRow): TimetableStudent => ({
     id: row.id,
     short: row.short,
-    firstName: row.firstname ?? null,
-    lastName: row.lastname ?? null,
+    name: row.firstname !== undefined && row.lastname !== undefined ? `${row.firstname} ${row.lastname}` : null,
     classId: row.classid,
     groupIds: row.groupids,
 });
