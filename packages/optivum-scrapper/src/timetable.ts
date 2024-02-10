@@ -44,27 +44,27 @@ export class Timetable {
     }[][]> {
         const unitsIds = await this.getUnitIds();
         const [classTables, teacherTables, roomTables] = await Promise.all([
-        Promise.all(
-            unitsIds.classIds.map(async (classId) => ({
-                symbol: 'o' as const,
-                id: classId,
-                table: await this.getTable('o', classId),
-            })),
-        ),
-        Promise.all(
-            unitsIds.teacherIds.map(async (teacherId) => ({
-                symbol: 'n' as const,
-                id: teacherId,
-                table: await this.getTable('n', teacherId),
-            })),
-        ),
-        Promise.all(
-            unitsIds.roomIds.map(async (roomId) => ({
-                symbol: 's' as const,
-                id: roomId,
-                table: await this.getTable('s', roomId),
-            })),
-        ),
+            Promise.all(
+                unitsIds.classIds.map(async (classId) => ({
+                    symbol: 'o' as const,
+                    id: classId,
+                    table: await this.getTable('o', classId),
+                })),
+            ),
+            Promise.all(
+                unitsIds.teacherIds.map(async (teacherId) => ({
+                    symbol: 'n' as const,
+                    id: teacherId,
+                    table: await this.getTable('n', teacherId),
+                })),
+            ),
+            Promise.all(
+                unitsIds.roomIds.map(async (roomId) => ({
+                    symbol: 's' as const,
+                    id: roomId,
+                    table: await this.getTable('s', roomId),
+                })),
+            ),
         ]);
         return [ classTables, teacherTables, roomTables ]
     }
