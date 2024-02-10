@@ -20,7 +20,7 @@ export class Table {
         this.documentInnerHtml = this.document.documentElement.innerHTML.replace(' ', '');
     }
 
-    static readonly weekdayIsoNumber: Record<string, number> = {
+    static readonly weekdayIsoNumber: Partial<Record<string, number>> = {
         poniedzialek: 1,
         wtorek: 2,
         sroda: 3,
@@ -30,7 +30,7 @@ export class Table {
         niedziela: 7,
     };
 
-    public getFullName = (): string => this.document.querySelector('span.tytulnapis')?.textContent ?? '';  
+    public getFullName = (): string => this.document.querySelector('span.tytulnapis')?.textContent ?? '';
 
     public getHtml = (): string => this.document.body.innerHTML;
 
@@ -62,7 +62,7 @@ export class Table {
             return {
                 index,
                 name: weekdayName,
-                isoNumber: Table.weekdayIsoNumber[slugify(weekdayName)],
+                isoNumber: Table.weekdayIsoNumber[slugify(weekdayName)] ?? null,
             };
         });
     }

@@ -25,7 +25,7 @@ import {
 } from './types.js';
 import { parseTime } from './utils.js';
 
-const weekdayIsoNumber: Record<string, number> = {
+const weekdayIsoNumber: Partial<Record<string, number>> = {
     poniedzialek: 1,
     wtorek: 2,
     sroda: 3,
@@ -47,7 +47,7 @@ export const mapDaysTableRow = (row: DaysTableRow): TimetableDay => ({
     id: row.id,
     name: row.name,
     short: row.short,
-    isoNumber: weekdayIsoNumber[slugify(row.name)],
+    isoNumber: weekdayIsoNumber[slugify(row.name)] ?? null,
 });
 
 export const mapWeeksTableRow = (row: WeeksTableRow): TimetableWeek => ({
