@@ -150,3 +150,18 @@ export const parseLesson = (fragment: DocumentFragment): Lesson => {
         interclassGroupCode,
     };
 };
+
+export function getTeacherKey(currentUnit: { id: number; symbol: string }, id: number | null, code: string | null) {
+    if (currentUnit.symbol === 'n') return currentUnit.id.toString();
+    return id !== null || code !== null ? id?.toString() ?? `#${code}` : null;
+}
+
+export function getRoomKey(currentUnit: { id: number; symbol: string }, id: number | null, code: string | null) {
+    if (currentUnit.symbol === 's') return currentUnit.id.toString();
+    return id !== null || code !== null ? id?.toString() ?? `#${code}` : null;
+}
+
+export function getClassKey(currentUnit: { id: number; symbol: string }, id: number | null, code: string | null) {
+    if (currentUnit.symbol === 'o') return currentUnit.id.toString();
+    return id !== null || code !== null ? id?.toString() ?? `#${code}` : null;
+}
