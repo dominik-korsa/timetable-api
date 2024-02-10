@@ -135,7 +135,7 @@ export class Client {
                             (weeksDefsRow) => weeksDefsRow.vals.length === 1 && weeksDefsRow.vals[0] === cardsRow.weeks,
                         );
                         const termsDef = termsDefsTableRows.find(
-                            (termsDefsRow) => termsDefsRow.vals.includes(lessonsRow.terms) && termsDefsRow.vals.length === 1,
+                            (termsDefsRow) => termsDefsRow.vals.length === 1 && termsDefsRow.vals[0] === lessonsRow.terms,
                         );
                         if (!daysDef) {
                             throw Error('Missing daysDef');
