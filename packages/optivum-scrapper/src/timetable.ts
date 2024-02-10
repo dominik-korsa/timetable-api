@@ -38,10 +38,22 @@ export class Timetable {
     }
 
     public async getUnits(): Promise<{
-        symbol: "o" | 'n' | 's';
-        id: number;
-        table: Table;
-    }[][]> {
+        classTables: {
+            symbol: 'o';
+            id: number;
+            table: Table;
+        }[];
+        teacherTables: {
+            symbol: 'n';
+            id: number;
+            table: Table;
+        }[];
+        roomTables: {
+            symbol: 's';
+            id: number;
+            table: Table;
+        }[];
+    }> {
         const unitsIds = await this.getUnitIds();
         const [classTables, teacherTables, roomTables] = await Promise.all([
             Promise.all(
@@ -66,7 +78,7 @@ export class Timetable {
                 })),
             ),
         ]);
-        return [ classTables, teacherTables, roomTables ]
+        return { classTables, teacherTables, roomTables };
     }
 
     public async getUnitIds(): Promise<UnitList> {

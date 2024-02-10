@@ -23,11 +23,10 @@ export async function parse(url: string, axiosInstance: Axios): Promise<Timetabl
     const interclassGroups = new Map<string, TimetableInterclassGroup>();
 
     const timetable = new Timetable(url, axiosInstance);
-    const unitsIds = await timetable.getUnitIds();
 
-    if (unitsIds.classIds.length === 0 && unitsIds.roomIds.length === 0 && unitsIds.teacherIds.length === 0)
-        throw new Error('No unit IDs found');
-    const [classTables, teacherTables, roomTables] = await timetable.getUnits();
+    const { classTables, teacherTables, roomTables } = await timetable.getUnits();
+    if (classTables.length === 0 && roomTables.length === 0 && teacherTables.length === 0)
+        throw new Error('No units found');
     const units = [...classTables, ...teacherTables, ...roomTables];
     const weekdays = units[0].table.getWeekdays();
     const generationDate = units[0].table.getGenerationDate();
