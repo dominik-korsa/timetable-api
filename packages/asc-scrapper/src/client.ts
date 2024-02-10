@@ -132,7 +132,7 @@ export class Client {
                     return cards.map((cardsRow) => {
                         const daysDef = daysDefsTableRows.find(daysDefsRow => daysDefsRow.vals.length === 1 && daysDefsRow.vals[0] === cardsRow.days);
                         const weeksDef = weeksDefsTableRows.find(
-                            (weeksDefsRow) => weeksDefsRow.vals.includes(cardsRow.weeks) && weeksDefsRow.vals.length === 1,
+                            (weeksDefsRow) => weeksDefsRow.vals.length === 1 && weeksDefsRow.vals[0] === cardsRow.weeks,
                         );
                         const termsDef = termsDefsTableRows.find(
                             (termsDefsRow) => termsDefsRow.vals.includes(lessonsRow.terms) && termsDefsRow.vals.length === 1,
