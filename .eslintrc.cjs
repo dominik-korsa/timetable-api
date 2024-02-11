@@ -21,4 +21,12 @@ module.exports = {
         '@typescript-eslint/prefer-regexp-exec': 'error',
         'arrow-body-style': ['error', 'as-needed'],
     },
+    overrides: [
+        {
+            files: ['tests/*'],
+            env: {
+                jest: true,
+            },
+        },
+    ],
 };
