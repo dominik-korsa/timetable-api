@@ -53,7 +53,7 @@ async function checkSchool(school: SchoolsTable & { website_url: string }, axios
         optivumTimetables.map(async (timetableUrl) => {
             const parsedTimetable = await parse(timetableUrl, axiosInstance);
             const hash = createHash('sha512').update(JSON.stringify(parsedTimetable.htmls.sort())).digest('hex');
-            const timetableVersion = await pushOptivumTimetableVersion(parsedTimetable, school.rspo_id, hash);
+            const timetableVersion = await pushOptivumTimetableVersion(parsedTimetable.data, parsedTimetable.generationDate, school.rspo_id, hash);
             await pushOptivumTimetableVersionUrl(timetableUrl, timetableVersion.unique_id, school.rspo_id);
         }),
     );

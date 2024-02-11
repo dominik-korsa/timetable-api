@@ -5,6 +5,7 @@ export interface UnitList {
 }
 
 export interface TimeSlot {
+    index: number;
     name: string;
     beginMinute: number;
     endMinute: number;
