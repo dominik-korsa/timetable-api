@@ -19,6 +19,6 @@ jobs:
         node-version: ${{ matrix.node-version }}
         cache: 'pnpm'
     - name: Install modules
-      run: pnpm install
+      run: pnpm install --no-frozen-lockfile
     - name: Run tests
       run: pnpm exec nx run @timetable-api/asc-scrapper:test
