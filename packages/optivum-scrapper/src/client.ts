@@ -28,7 +28,7 @@ export async function parse(url: string, axiosInstance: Axios): Promise<Timetabl
     if (classTables.length === 0 && roomTables.length === 0 && teacherTables.length === 0)
         throw new Error('No units found');
     const units = [...classTables, ...teacherTables, ...roomTables];
-    const weekdays = units[0].table.getWeekdays();
+    const weekdays = units[0].table.getDays();
     const generationDate = units[0].table.getGenerationDate();
     const validationDate = units[0].table.getValidationDate();
 
