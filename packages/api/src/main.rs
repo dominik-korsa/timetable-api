@@ -20,7 +20,7 @@ use std::env;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use axum::extract::Request;
-use axum::http::header::X_CONTENT_TYPE_OPTIONS;
+use axum::http::header::{CACHE_CONTROL, X_CONTENT_TYPE_OPTIONS};
 use axum::http::HeaderValue;
 use axum::middleware::Next;
 use tower::ServiceBuilder;
@@ -37,6 +37,7 @@ async fn default_headers_middleware(
     let mut response = next.run(request).await;
     let headers = response.headers_mut();
     headers.insert(X_CONTENT_TYPE_OPTIONS, HeaderValue::from_static("nosniff"));
+    headers.insert(CACHE_CONTROL, HeaderValue::from_static("no-cache"));
     response
 }
 
