@@ -12,7 +12,6 @@ import {
 import { Timetable } from './timetable.js';
 import { Axios } from 'axios';
 import { getClassKey, getRoomKey, getTeacherKey, parseTeacherFullName } from './utils.js';
-import fs from "fs";
 
 export async function parse(
     url: string,
@@ -210,32 +209,6 @@ export async function parse(
                 existingLesson.teacherIds = [teacherKey];
         });
     });
-    await fs.promises.writeFile(
-        'data.json',
-        JSON.stringify({
-            data: {
-                common: {
-                    buildings: [],
-                    students: [],
-                    weeks: [{ id: '0', name: 'Tydzień A', short: 'A' }],
-                    periods: [{ id: '0', name: 'Semestr A', short: 'A' }],
-                    days,
-                    timeSlots: [...timeSlots.values()],
-                    classes: [...classes.values()],
-                    teachers: [...teachers.values()],
-                    rooms: [...rooms.values()],
-                    subjects: [...subjects.values()],
-                    commonGroups: [...commonGroups.values()],
-                    interclassGroups: [...interclassGroups.values()],
-                },
-                lessons: lessons.flat().flat(),
-            },
-            htmls: units.map((unit) => unit.table.getHtml()),
-            validFrom: validationDate ?? null,
-            generationDate,
-        }),
-        'utf8',
-    );
     return {
         data: {
             common: {
