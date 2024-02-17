@@ -21,3 +21,8 @@ pub(crate) struct OptivumTimetableVersion {
     pub(crate) generated_on: String,
     pub(crate) discriminant: i16,
 }
+
+#[derive(Serialize, JsonSchema)]
+pub(crate) struct SchoolListResponse {
+    pub(crate) schools: Vec<School>
+}
