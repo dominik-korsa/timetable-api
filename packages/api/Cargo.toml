@@ -19,3 +19,4 @@ aide = { version = "0.13.1", features = ["axum", "macros", "redoc"] }
 schemars = { version = "0.8.16", features = ["raw_value"] }
 axum-jsonschema = { version = "0.8.0", features = ["aide"] }
 serde_json = { version = "1.0.111", features = ["raw_value"] }
+tower-http = { version = "0.5.1", features = ["cors"] }

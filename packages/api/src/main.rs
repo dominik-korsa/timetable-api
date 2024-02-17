@@ -19,6 +19,7 @@ use dotenvy::dotenv;
 use std::env;
 use std::net::SocketAddr;
 use std::sync::Arc;
+use tower_http::cors::{Any, CorsLayer};
 
 async fn handle_fallback() -> impl IntoResponse {
     ApiError::RouteNotFound
@@ -39,6 +40,9 @@ async fn main() {
     aide::gen::extract_schemas(true);
     let mut api = OpenApi::default();
 
+    let cors = CorsLayer::new()
+        .allow_origin(Any);
+
     let app_router = ApiRouter::new()
         .merge(create_schools_router())
         .route("/", get(redirect_to_docs))
@@ -47,6 +51,7 @@ async fn main() {
         .finish_api_with(&mut api, transform_api_docs)
         .with_state(db)
         .layer(Extension(Arc::new(api)))
+        .layer(cors)
         .into_make_service_with_connect_info::<SocketAddr>();
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
