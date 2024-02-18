@@ -160,6 +160,7 @@ export class Client {
                             seminarGroup: lessonsRow.seminargroup,
                             studentIds: lessonsRow.studentids,
                             interclassGroupId: null,
+                            comment: null,
                         };
                     });
                 })

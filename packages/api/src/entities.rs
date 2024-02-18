@@ -6,6 +6,8 @@ pub(crate) struct School {
     pub(crate) rspo_id: i32,
     pub(crate) name: String,
     pub(crate) teryt: String,
+    pub(crate) geo_lat: f64,
+    pub(crate) geo_long: f64,
 }
 
 #[derive(Serialize, JsonSchema)]
@@ -20,4 +22,9 @@ pub(crate) struct OptivumTimetableVersion {
     // pub(crate) generated_on: NaiveDate,
     pub(crate) generated_on: String,
     pub(crate) discriminant: i16,
+}
+
+#[derive(Serialize, JsonSchema)]
+pub(crate) struct SchoolListResponse {
+    pub(crate) schools: Vec<School>
 }

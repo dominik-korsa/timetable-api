@@ -15,7 +15,7 @@ export interface Institution {
     gminaRodzajKod: string;
     miejscowosc: string;
     miejscowoscKodTERYT: string;
-    geolokalizacja: { latitude: string; longitude: string };
+    geolokalizacja: { latitude: number; longitude: number };
     stronaInternetowa: string;
     adresDoKorespondecjiMiejscowosc: string;
     adresDoKorespondecjiUlica: string;

@@ -93,7 +93,7 @@ export interface TimetableLesson {
     timeSlotId: string;
     dayId: string;
     weekId: string | null;
-    subjectId: string;
+    subjectId: string | null;
     teacherIds: string[];
     roomIds: string[];
     groupIds: string[];
@@ -102,6 +102,7 @@ export interface TimetableLesson {
     seminarGroup: number | null;
     studentIds: string[];
     interclassGroupId: string | null;
+    comment: string | null;
 }
 
 export interface TimetableVersionData {

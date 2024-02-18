@@ -20,7 +20,7 @@ impl Db {
     pub(crate) async fn get_schools_by_teryt(&self, teryt: &str) -> sqlx::Result<Vec<School>> {
         sqlx::query_as!(
             School,
-            r#"SELECT "name", "rspo_id", "commune_teryt" as "teryt" FROM "schools"
+            r#"SELECT "name", "rspo_id", "commune_teryt" as "teryt", "geo_lat", "geo_long" FROM "schools"
                 WHERE commune_teryt LIKE $1
                 ORDER BY "commune_teryt", "rspo_id""#,
             format!("{}%", teryt),
@@ -32,7 +32,7 @@ impl Db {
     pub(crate) async fn get_school_by_rspo_id(&self, rspo_id: i32) -> sqlx::Result<Option<School>> {
         sqlx::query_as!(
             School,
-            r#"SELECT "name", "rspo_id", "commune_teryt" as "teryt" FROM "schools"
+            r#"SELECT "name", "rspo_id", "commune_teryt" as "teryt", "geo_lat", "geo_long" FROM "schools"
                 WHERE rspo_id = $1"#,
             rspo_id,
         )

@@ -4,7 +4,7 @@ import {
     OptivumTimetableVersionsTable,
     SchoolsTable,
     TimetableUrlsTable,
-    TimetableVersion,
+    TimetableVersionData,
 } from '@timetable-api/common';
 import dotenv from 'dotenv';
 import knex from 'knex';
@@ -29,7 +29,8 @@ export async function getSchoolsWithWebiste() {
 }
 
 export async function pushOptivumTimetableVersion(
-    parsedTimetable: TimetableVersion,
+    parsedTimetableData: TimetableVersionData,
+    generationDate: string,
     schoolRspoId: number,
     hash: string,
 ) {
@@ -38,10 +39,10 @@ export async function pushOptivumTimetableVersion(
             .returning('unique_id')
             .insert({
                 school_rspo_id: schoolRspoId,
-                generated_on: parsedTimetable.data.generationDate,
-                timetable_data: JSON.stringify(parsedTimetable.data),
+                generated_on: generationDate,
+                timetable_data: JSON.stringify(parsedTimetableData),
                 discriminant: dbClient.raw(
-                    `(SELECT coalesce(max(discriminant), -1) + 1 FROM optivum_timetable_versions WHERE school_rspo_id = ${schoolRspoId} AND generated_on = '${parsedTimetable.data.generationDate}')`,
+                    `(SELECT coalesce(max(discriminant), -1) + 1 FROM optivum_timetable_versions WHERE school_rspo_id = ${schoolRspoId} AND generated_on = '${generationDate}')`,
                 ),
                 hash,
             })

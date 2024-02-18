@@ -1,5 +1,5 @@
 use crate::db::Db;
-use crate::entities::SchoolWithVersions;
+use crate::entities::{SchoolListResponse, SchoolWithVersions};
 use crate::error::ApiError;
 use aide::axum::routing::{get, post};
 use aide::axum::{ApiRouter, IntoApiResponse};
@@ -45,7 +45,9 @@ async fn list_schools(
         return Err(ApiError::InvalidTerytCode);
     }
     let schools = db.get_schools_by_teryt(&params.teryt).await?;
-    Ok(Json(schools))
+    Ok(Json(SchoolListResponse {
+        schools
+    }))
 }
 
 #[derive(Deserialize, JsonSchema)]
