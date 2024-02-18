@@ -9,6 +9,11 @@ pub(crate) struct School {
     pub(crate) geo_lat: f64,
     pub(crate) geo_long: f64,
     pub(crate) parent_rspo_id: Option<i32>,
+    pub(crate) address_street: String,
+    pub(crate) address_building_number: String,
+    pub(crate) address_apartament_number: String,
+    pub(crate) address_zip_code: String,
+    pub(crate) address_town: String,
 }
 
 #[derive(Serialize, JsonSchema)]

@@ -20,7 +20,14 @@ impl Db {
     pub(crate) async fn get_schools_by_teryt(&self, teryt: &str) -> sqlx::Result<Vec<School>> {
         sqlx::query_as!(
             School,
-            r#"SELECT "name", "rspo_id", "commune_teryt" as "teryt", "geo_lat", "geo_long", "parent_rspo_id" FROM "schools"
+            r#"SELECT
+                "name", "rspo_id", "commune_teryt" as "teryt", "geo_lat", "geo_long", "parent_rspo_id",
+                "corresp_addr_street" as "address_street",
+                "corresp_addr_building_nr" as "address_building_number",
+                "corresp_addr_apartament_nr" as "address_apartament_number",
+                "corresp_addr_zip_code" as "address_zip_code",
+                "corresp_addr_town" as "address_town"
+                FROM "schools"
                 WHERE commune_teryt LIKE $1
                 ORDER BY "commune_teryt", "rspo_id""#,
             format!("{}%", teryt),
@@ -32,7 +39,14 @@ impl Db {
     pub(crate) async fn get_school_by_rspo_id(&self, rspo_id: i32) -> sqlx::Result<Option<School>> {
         sqlx::query_as!(
             School,
-            r#"SELECT "name", "rspo_id", "commune_teryt" as "teryt", "geo_lat", "geo_long", "parent_rspo_id" FROM "schools"
+            r#"SELECT
+                "name", "rspo_id", "commune_teryt" as "teryt", "geo_lat", "geo_long", "parent_rspo_id",
+                "corresp_addr_street" as "address_street",
+                "corresp_addr_building_nr" as "address_building_number",
+                "corresp_addr_apartament_nr" as "address_apartament_number",
+                "corresp_addr_zip_code" as "address_zip_code",
+                "corresp_addr_town" as "address_town"
+                FROM "schools"
                 WHERE rspo_id = $1"#,
             rspo_id,
         )
