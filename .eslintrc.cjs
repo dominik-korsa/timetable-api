@@ -23,7 +23,7 @@ module.exports = {
     },
     overrides: [
         {
-            files: ['tests/**'],
+            files: ['tests/*'],
             env: {
                 jest: true,
             },
