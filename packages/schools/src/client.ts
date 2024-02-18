@@ -59,6 +59,7 @@ export async function run(institutionTypeIds: number[]): Promise<void> {
                             corresp_addr_zip_code: school.adresDoKorespondecjiKodPocztowy,
                             website_url: checkUrl(school.stronaInternetowa),
                             institution_type: school.typ.id,
+                            parent_rspo_id: extractInstitutionId(school.podmiotNadrzedny),
                         })),
                     )
                     .onConflict('rspo_id')
@@ -71,6 +72,13 @@ export async function run(institutionTypeIds: number[]): Promise<void> {
         }),
     );
     console.log('Done!');
+}
+
+function extractInstitutionId(url: string | null): string | null {
+    if (url === null) return null;
+    const prefix = '/api/placowki/';
+    if (!url.startsWith(prefix)) throw new Error(`Institution URL does not start with '${prefix}'`);
+    return url.substring(prefix.length);
 }
 
 function checkUrl(url: string) {

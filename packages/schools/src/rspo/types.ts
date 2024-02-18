@@ -1,3 +1,7 @@
+/**
+ * Schema for RSPO API response for endpoint
+ * https://api-rspo.mein.gov.pl/api/placowki/
+ */
 export interface Institution {
     numerRspo: number;
     nazwa: string;
@@ -22,4 +26,8 @@ export interface Institution {
     adresDoKorespondecjiNumerBudynku: string;
     adresDoKorespondecjiNumerLokalu: string;
     adresDoKorespondecjiKodPocztowy: string;
+    /**
+     * In the form "/api/placowki/20539"
+     */
+    podmiotNadrzedny: null | string;
 }
