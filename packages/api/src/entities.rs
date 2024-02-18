@@ -8,6 +8,7 @@ pub(crate) struct School {
     pub(crate) teryt: String,
     pub(crate) geo_lat: f64,
     pub(crate) geo_long: f64,
+    pub(crate) parent_rspo_id: Option<i32>,
 }
 
 #[derive(Serialize, JsonSchema)]
