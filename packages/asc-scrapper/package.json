@@ -9,7 +9,8 @@
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
-    "@timetable-api/common": "workspace:*"
+    "@timetable-api/common": "workspace:*",
+    "nock": "^13.5.3"
   },
   "type": "module"
 }
