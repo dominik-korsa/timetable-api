@@ -38,6 +38,7 @@ export async function run(institutionTypeIds: number[]): Promise<void> {
                     console.log('Error');
                     continue;
                 }
+                if (data.length === 0) break;
                 console.log(
                     `[Institution type: ${institutionTypeId}, page: ${page}] Parsing and pushing data to database...`,
                 );
