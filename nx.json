@@ -13,7 +13,8 @@
       "outputs": ["{projectRoot}/dist"]
     },
     "start": {
-      "dependsOn": ["build"]
+      "dependsOn": ["build"],
+      "parallel": false
     },
     "start:ts-node": {
       "dependsOn": ["^build"]

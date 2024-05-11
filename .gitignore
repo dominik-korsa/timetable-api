@@ -5,6 +5,8 @@
 **/node_modules
 **/venv
 
+.nx
+
 packages/*/dist
 
 .env

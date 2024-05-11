@@ -13,10 +13,17 @@ import { Timetable } from './timetable.js';
 import { Axios } from 'axios';
 import { getClassKey, getRoomKey, getTeacherKey, parseTeacherFullName } from './utils.js';
 
+export interface ParseResult {
+    data: TimetableVersionData;
+    htmls: string[];
+    validFrom: string | null;
+    generationDate: string;
+}
+
 export async function parse(
     url: string,
     axiosInstance: Axios,
-): Promise<{ data: TimetableVersionData; htmls: string[]; validFrom: string | null; generationDate: string }> {
+): Promise<ParseResult> {
     const timeSlots = new Map<string, TimetableTimeSlot>();
     const classes = new Map<string, TimetableClass>();
     const teachers = new Map<string, TimetableTeacher>();

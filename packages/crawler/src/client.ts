@@ -2,7 +2,7 @@ import axios, { Axios } from 'axios';
 import axiosRetry from 'axios-retry';
 import { JSDOM } from 'jsdom';
 import { findLinksByKeywords, getEdupageInstanceName, pageIsOptivum } from './utils.js';
-import { parse } from '@timetable-api/optivum-scrapper';
+import { parse, ParseResult } from '@timetable-api/optivum-scrapper';
 import { Client as ASCScrapperClient } from '@timetable-api/asc-scrapper';
 import { createHash } from 'crypto';
 import { SchoolsTable } from '@timetable-api/common';
@@ -14,15 +14,40 @@ import {
     pushOptivumTimetableVersion,
     pushOptivumTimetableVersionUrl,
 } from './db.js';
-import { SingleBar } from 'cli-progress';
+import { asyncForEachWithLimit, ParalelLimit } from './paralel-limit.js';
+import { MultiBar } from 'cli-progress';
+
+const PARALEL_SCHOOL_LIMIT = 500;
+const PARALEL_EDUPAGE_LIMIT = 100;
 
 export async function run() {
     const axiosInstance = axios.create();
     axiosRetry(axiosInstance, { retries: 3, retryDelay: (retryCount) => retryCount * 3000 });
+
+    console.log('Downloading school list from database...');
     const schools = await getSchoolsWithWebiste();
-    await Promise.all(schools.map((school) => checkSchool(school, axiosInstance)));
+    const multibar = new MultiBar({
+        noTTYOutput: true,
+        format: '[{bar}] {percentage}% | ETA: {eta_formatted} | {value}/{total}',
+        etaBuffer: 50,
+    });
+    const schoolsBar = multibar.create(schools.length, 0);
+    await asyncForEachWithLimit(
+        schools,
+        async (school) => {
+            await checkSchool(school, axiosInstance, (message: string) => { multibar.log(message) });
+            schoolsBar.increment();
+        },
+        new ParalelLimit(PARALEL_SCHOOL_LIMIT),
+    );
+    schoolsBar.stop();
+
     const edupageInstanceNames = await getEdupageInstanceNames();
-    await Promise.all(edupageInstanceNames.map((instanceName) => checkEdupageInstance(instanceName, axiosInstance)));
+    await asyncForEachWithLimit(
+        edupageInstanceNames,
+        (instanceName) => checkEdupageInstance(instanceName, axiosInstance),
+        new ParalelLimit(PARALEL_EDUPAGE_LIMIT),
+    );
 }
 
 async function checkEdupageInstance(edupageInstanceName: string, axiosInstance: Axios) {
@@ -33,9 +58,11 @@ async function checkEdupageInstance(edupageInstanceName: string, axiosInstance: 
     }
 }
 
-async function checkSchool(school: SchoolsTable & { website_url: string }, axiosInstance: Axios) {
-    const line = new SingleBar({ format: '[RSPO_ID: {rspo_id}] {status}', noTTYOutput: true });
-    line.start(1, 0, { status: 'Getting timetables...', rspo_id: school.rspo_id });
+async function checkSchool(
+    school: SchoolsTable & { website_url: string },
+    axiosInstance: Axios,
+    log: (message: string) => void
+) {
     let optivumTimetables: string[];
     let edupageInstances: string[];
     try {
@@ -43,30 +70,42 @@ async function checkSchool(school: SchoolsTable & { website_url: string }, axios
         optivumTimetables = result.optivumTimetables;
         edupageInstances = result.edupageInstances;
     } catch {
-        line.update(1, { status: 'An error occurred while getting timetables.' });
+        log(`[RSPO ${school.rspo_id}] An error occurred while getting timetables\n`);
         return;
     }
     if (optivumTimetables.length !== 0) {
-        line.update(0, { status: 'Parsing optivum timetables and pushing data to database...' });
+        log(`[RSPO ${school.rspo_id}] Found OPTIVUM timetables, parsing...\n`);
     }
-    await Promise.allSettled(
+    await Promise.all(
         optivumTimetables.map(async (timetableUrl) => {
-            const parsedTimetable = await parse(timetableUrl, axiosInstance);
-            const hash = createHash('sha512').update(JSON.stringify(parsedTimetable.htmls.sort())).digest('hex');
-            const timetableVersion = await pushOptivumTimetableVersion(parsedTimetable.data, parsedTimetable.generationDate, school.rspo_id, hash);
-            await pushOptivumTimetableVersionUrl(timetableUrl, timetableVersion.unique_id, school.rspo_id);
+            let hash: string;
+            let parsedTimetable: ParseResult;
+            try {
+                const startTime = Date.now();
+                parsedTimetable = await parse(timetableUrl, axiosInstance);
+                hash = createHash('sha512').update(JSON.stringify(parsedTimetable.htmls.sort())).digest('hex');
+                log(`[RSPO ${school.rspo_id}] Parsing took ${Date.now() - startTime}ms`);
+            } catch {
+                log(`[RSPO ${school.rspo_id}] Failed to parse timetable\n`);
+                return;
+            }
+            try {
+                const timetableVersion = await pushOptivumTimetableVersion(parsedTimetable.data, parsedTimetable.generationDate, school.rspo_id, hash);
+                await pushOptivumTimetableVersionUrl(timetableUrl, timetableVersion.unique_id, school.rspo_id);
+            } catch {
+                log(`[RSPO ${school.rspo_id}] Failed to push timetable version to database\n`);
+            }
         }),
     );
     if (edupageInstances.length !== 0) {
-        line.update(0, { status: 'Pushing edupage instances to database...' });
+        log(`[RSPO ${school.rspo_id}] Found Edupage instances\n`);
         try {
             await pushEdupageInstances(school.rspo_id, edupageInstances);
         } catch {
-            line.update(1, { status: 'An error occurred while pushing edupage instances to database.' });
+            log(`[RSPO ${school.rspo_id}] Failed to push Edupage instances to database\n`);
             return;
         }
     }
-    line.update(1, { status: 'Done!' });
 }
 
 async function findTimetables(
