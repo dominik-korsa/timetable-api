@@ -3,6 +3,7 @@
 use std::collections::HashSet;
 use std::env;
 use std::fs::File;
+use std::future::Future;
 use std::io::Write;
 use std::path::PathBuf;
 use std::sync::atomic::AtomicU64;
@@ -219,6 +220,33 @@ fn is_optivum_candidate(document: &Html) -> bool {
     })
 }
 
+/// Acquires `semaphore` and then runs `cb`.
+/// Semaphore permit is released when job is done
+/// or after `timeout` passes, whichever is first.
+async fn with_semaphore<
+    'a,
+    T: Send + 'static,
+    R: Future<Output = T> + Send + 'static,
+    CB: FnOnce() -> R + Send + 'a,
+>(semaphore: &'a Semaphore, cb: CB, timeout: Duration) -> T {
+    let permit = Some(semaphore.acquire().await.unwrap());
+    let timeout_job = tokio::spawn(tokio::time::sleep(timeout));
+    let timeout_abort_handle = timeout_job.abort_handle();
+    let cb_future = cb();
+    let action_job = tokio::spawn(async move {
+        let result = cb_future.await;
+        timeout_abort_handle.abort();
+        result
+    });
+    match timeout_job.await {
+        Err(err) if err.is_cancelled() => {},
+        Ok(()) => {},
+        Err(err) => panic!("{}", err),
+    };
+    drop(permit);
+    action_job.await.unwrap()
+}
+
 /// `url` should be normalized
 async fn crawl_dfs(url: &Url, remaining_depth: u8, reqwest_client: &reqwest::Client, request_semaphore: &Semaphore, state: &Mutex<CrawlState>) {
     let already_added = !state.lock().unwrap().visited_urls.insert(url.clone());
@@ -226,15 +254,21 @@ async fn crawl_dfs(url: &Url, remaining_depth: u8, reqwest_client: &reqwest::Cli
 
     // println!("Processing URL: {}", url.as_str());
 
-    let permit = request_semaphore.acquire().await.unwrap();
-    let response = match reqwest_client.get(url.clone()).send().await {
+    let response = {
+        let url = url.clone();
+        with_semaphore(
+            request_semaphore,
+            move || reqwest_client.get(url).send(),
+            Duration::from_secs(2)
+        ).await
+    };
+    let response = match response {
         Ok(response) => response,
         Err(error) => {
             println!("Failed to fetch {}\nReason: {}", &url.as_str(), error);
             return;
         },
     };
-    drop(permit);
     let Ok(html) = response.text().await else { return };
     let document = Html::parse_document(&html);
 
