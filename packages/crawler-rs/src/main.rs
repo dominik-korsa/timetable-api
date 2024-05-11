@@ -1,4 +1,3 @@
-#![feature(iter_intersperse)]
 #![warn(clippy::pedantic)]
 
 use std::collections::HashSet;
@@ -14,13 +13,11 @@ use std::time::Duration;
 use aho_corasick::AhoCorasick;
 use dotenvy::dotenv;
 use futures::future::join_all;
-use futures::stream::FuturesUnordered;
 use futures::{StreamExt, TryStreamExt};
 use indicatif::ProgressBar;
 use lazy_static::lazy_static;
 use regex::{Captures, Regex};
 use scraper::{Html, Selector};
-use tokio::stream;
 use tokio::sync::Semaphore;
 use url::Url;
 
