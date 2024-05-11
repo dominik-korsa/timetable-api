@@ -14,7 +14,7 @@ use std::time::Duration;
 use aho_corasick::AhoCorasick;
 use dotenvy::dotenv;
 use futures::future::join_all;
-use futures::{StreamExt, TryStreamExt};
+use futures::StreamExt;
 use indicatif::{ProgressBar, ProgressStyle};
 use lazy_static::lazy_static;
 use regex::{Captures, Regex};
@@ -27,6 +27,11 @@ use crate::entities::SchoolWithWebsite;
 
 mod db;
 mod entities;
+
+const REQUEST_TIMEOUT: Duration = Duration::from_secs(10);
+const CONCURRENT_REQUESTS_LIMIT: usize = 128;
+const REQUEST_SEMAPHORE_TIMEOUT: Duration = Duration::from(2);
+const CONCURRENT_SCHOOLS_LIMIT: usize = 32;
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 10)]
 async fn main() {
@@ -47,11 +52,11 @@ async fn main() {
     let pb = ProgressBar::new(schools.len() as u64).with_style(progress_style);
 
     let reqwest_client = reqwest::Client::builder()
-        .timeout(Duration::from_secs(10))
+        .timeout(REQUEST_TIMEOUT)
         .build()
         .unwrap();
 
-    let request_semaphore = Semaphore::new(64);
+    let request_semaphore = Semaphore::new(CONCURRENT_REQUESTS_LIMIT);
 
     let x = AtomicU64::new(0);
 
@@ -85,7 +90,7 @@ async fn main() {
             pb.inc(1);
         }
     }));
-    stream.buffer_unordered(32).collect::<Vec<()>>().await;
+    stream.buffer_unordered(CONCURRENT_SCHOOLS_LIMIT).collect::<Vec<()>>().await;
 
     pb.finish();
 
@@ -259,7 +264,7 @@ async fn crawl_dfs(url: &Url, remaining_depth: u8, reqwest_client: &reqwest::Cli
         with_semaphore(
             request_semaphore,
             move || reqwest_client.get(url).send(),
-            Duration::from_secs(2)
+            REQUEST_SEMAPHORE_TIMEOUT,
         ).await
     };
     let response = match response {
