@@ -14,15 +14,29 @@ import {
     pushOptivumTimetableVersion,
     pushOptivumTimetableVersionUrl,
 } from './db.js';
+import { asyncForEachWithLimit, ParalelLimit } from './paralel-limit.js';
 import { SingleBar } from 'cli-progress';
+
+const PARALEL_SCHOOL_LIMIT = 100;
+const PARALEL_EDUPAGE_LIMIT = 100;
 
 export async function run() {
     const axiosInstance = axios.create();
     axiosRetry(axiosInstance, { retries: 3, retryDelay: (retryCount) => retryCount * 3000 });
+
     const schools = await getSchoolsWithWebiste();
-    await Promise.all(schools.map((school) => checkSchool(school, axiosInstance)));
+    await asyncForEachWithLimit(
+        schools,
+        (school) => checkSchool(school, axiosInstance),
+        new ParalelLimit(PARALEL_SCHOOL_LIMIT),
+    );
+
     const edupageInstanceNames = await getEdupageInstanceNames();
-    await Promise.all(edupageInstanceNames.map((instanceName) => checkEdupageInstance(instanceName, axiosInstance)));
+    await asyncForEachWithLimit(
+        edupageInstanceNames,
+        (instanceName) => checkEdupageInstance(instanceName, axiosInstance),
+        new ParalelLimit(PARALEL_EDUPAGE_LIMIT),
+    );
 }
 
 async function checkEdupageInstance(edupageInstanceName: string, axiosInstance: Axios) {
