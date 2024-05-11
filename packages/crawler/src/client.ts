@@ -58,6 +58,26 @@ async function checkEdupageInstance(edupageInstanceName: string, axiosInstance: 
     }
 }
 
+export async function checkUrl(rspo_id: number, url: string, log: (message: string) => void, axiosInstance: Axios) {
+    let hash: string;
+    let parsedTimetable: ParseResult;
+    try {
+        const startTime = Date.now();
+        parsedTimetable = await parse(url, axiosInstance);
+        hash = createHash('sha512').update(JSON.stringify(parsedTimetable.htmls.sort())).digest('hex');
+        log(`[RSPO ${rspo_id.toString(10)}] Parsing took ${(Date.now() - startTime).toString(10)}ms`);
+    } catch {
+        log(`[RSPO ${rspo_id.toString(10)}] Failed to parse timetable\n`);
+        return;
+    }
+    try {
+        const timetableVersion = await pushOptivumTimetableVersion(parsedTimetable.data, parsedTimetable.generationDate, rspo_id, hash);
+        await pushOptivumTimetableVersionUrl(url, timetableVersion.unique_id, rspo_id);
+    } catch {
+        log(`[RSPO ${rspo_id.toString(10)}] Failed to push timetable version to database\n`);
+    }
+}
+
 async function checkSchool(
     school: SchoolsTable & { website_url: string },
     axiosInstance: Axios,
@@ -77,25 +97,7 @@ async function checkSchool(
         log(`[RSPO ${school.rspo_id}] Found OPTIVUM timetables, parsing...\n`);
     }
     await Promise.all(
-        optivumTimetables.map(async (timetableUrl) => {
-            let hash: string;
-            let parsedTimetable: ParseResult;
-            try {
-                const startTime = Date.now();
-                parsedTimetable = await parse(timetableUrl, axiosInstance);
-                hash = createHash('sha512').update(JSON.stringify(parsedTimetable.htmls.sort())).digest('hex');
-                log(`[RSPO ${school.rspo_id}] Parsing took ${Date.now() - startTime}ms`);
-            } catch {
-                log(`[RSPO ${school.rspo_id}] Failed to parse timetable\n`);
-                return;
-            }
-            try {
-                const timetableVersion = await pushOptivumTimetableVersion(parsedTimetable.data, parsedTimetable.generationDate, school.rspo_id, hash);
-                await pushOptivumTimetableVersionUrl(timetableUrl, timetableVersion.unique_id, school.rspo_id);
-            } catch {
-                log(`[RSPO ${school.rspo_id}] Failed to push timetable version to database\n`);
-            }
-        }),
+        optivumTimetables.map((url) => checkUrl(school.rspo_id, url, log, axiosInstance)),
     );
     if (edupageInstances.length !== 0) {
         log(`[RSPO ${school.rspo_id}] Found Edupage instances\n`);
