@@ -2,6 +2,7 @@
 
 use std::collections::HashSet;
 use std::env;
+use std::error::Error;
 use std::fs::File;
 use std::future::Future;
 use std::io::Write;
@@ -15,8 +16,12 @@ use aho_corasick::AhoCorasick;
 use dotenvy::dotenv;
 use futures::future::join_all;
 use futures::StreamExt;
-use indicatif::{ProgressBar, ProgressStyle};
+use html5ever::{self, driver, ParseOpts};
+use html5ever::tendril::TendrilSink;
+use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
+use indicatif_log_bridge::LogWrapper;
 use lazy_static::lazy_static;
+use log::{debug, info, warn};
 use regex::{Captures, Regex};
 use scraper::{Html, Selector};
 use tokio::sync::Semaphore;
@@ -41,15 +46,21 @@ async fn main() {
         }
     }
 
+    let logger = env_logger::Builder
+        ::from_env(env_logger::Env::default().default_filter_or("info,html5ever=error"))
+        .build();
+    let multi = MultiProgress::new();
+    LogWrapper::new(multi.clone(), logger).try_init().unwrap();
+
     let db = Db::new(&env::var("DATABASE_URL").expect("DATABASE_URL env variable should be set"))
         .await
         .unwrap();
 
     let schools = db.get_schools_with_website().await.unwrap();
-    println!("{:?}", schools.len());
+    info!("{:?}", schools.len());
 
     let progress_style = ProgressStyle::with_template("[{elapsed_precise}] {wide_bar:.cyan/blue} {pos:>7}/{len:7} {percent_precise}% | ETA: {eta}").unwrap().progress_chars("##-");
-    let pb = ProgressBar::new(schools.len() as u64).with_style(progress_style);
+    let pb = multi.add(ProgressBar::new(schools.len() as u64).with_style(progress_style));
 
     let reqwest_client = reqwest::Client::builder()
         .timeout(REQUEST_TIMEOUT)
@@ -64,7 +75,7 @@ async fn main() {
 
     let file_path = PathBuf::from("/tmp/crawler-timetables.txt");
     let file = Mutex::new(File::create(&file_path).unwrap());
-    println!("Opened {}", file_path.display());
+    info!("Opened {}", file_path.display());
 
     let stream = futures::stream::iter(schools.into_iter().map(|school| {
         let reqwest_client = reqwest_client.clone();
@@ -76,7 +87,7 @@ async fn main() {
             let rspo_id = school.rspo_id;
             let timetables = crawl_school(school, &reqwest_client, request_semaphore).await;
             if !timetables.is_empty() {
-                println!(
+                info!(
                     "Found potential timetables for school {}:\n{:?}",
                     rspo_id,
                     timetables.iter().map(|url| url.as_str()).collect::<Vec<_>>()
@@ -94,7 +105,7 @@ async fn main() {
 
     pb.finish();
 
-    println!("Completed {} tasks", x.load(Relaxed));
+    info!("Completed {} tasks", x.load(Relaxed));
 }
 
 struct CrawlState {
@@ -257,7 +268,7 @@ async fn crawl_dfs(url: &Url, remaining_depth: u8, reqwest_client: &reqwest::Cli
     let already_added = !state.lock().unwrap().visited_urls.insert(url.clone());
     if already_added { return }
 
-    // println!("Processing URL: {}", url.as_str());
+    debug!("Processing URL: {}", url.as_str());
 
     let response = {
         let url = url.clone();
@@ -270,14 +281,20 @@ async fn crawl_dfs(url: &Url, remaining_depth: u8, reqwest_client: &reqwest::Cli
     let response = match response {
         Ok(response) => response,
         Err(error) => {
-            println!("Failed to fetch {}\nReason: {}", &url.as_str(), error);
+            let error = error.without_url();
+            warn!("Failed to fetch {}\nReason: {:?}\nSource: {}", &url.as_str(), error, match error.source() {
+                Some(source) => source.to_string(),
+                None => "<no source>".to_string(),
+            });
             return;
         },
     };
-    let Ok(html) = response.text().await else { return };
-    let document = Html::parse_document(&html);
 
-    // println!("Title: \"{}\"", document.select(&Selector::parse("head title").unwrap()).next().map(|x| x.inner_html()).unwrap_or("<no title>".to_string()));
+    let Ok(html) = response.text().await else { return };
+    let parser = driver::parse_document(Html::new_document(), ParseOpts::default());
+    let document = parser.one(html);
+
+    debug!("Title: \"{}\"", document.select(&Selector::parse("head title").unwrap()).next().map(|x| x.inner_html()).unwrap_or("<no title>".to_string()));
 
     if is_optivum_candidate(&document) {
         state.lock().unwrap().optivum_candidates.push(url.clone());
