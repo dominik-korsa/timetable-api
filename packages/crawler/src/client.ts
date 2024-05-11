@@ -17,8 +17,8 @@ import {
 import { asyncForEachWithLimit, ParalelLimit } from './paralel-limit.js';
 import { MultiBar } from 'cli-progress';
 
-const PARALEL_SCHOOL_LIMIT = 500;
-const PARALEL_EDUPAGE_LIMIT = 100;
+const PARALEL_SCHOOL_LIMIT = 20;
+const PARALEL_EDUPAGE_LIMIT = 50;
 
 export async function run() {
     const axiosInstance = axios.create();
@@ -70,7 +70,7 @@ async function checkSchool(
         optivumTimetables = result.optivumTimetables;
         edupageInstances = result.edupageInstances;
     } catch {
-        log(`[RSPO ${school.rspo_id}] An error occurred while getting timetables\n`);
+        log(`[RSPO ${school.rspo_id}] An er ror occurred while getting timetables\n`);
         return;
     }
     if (optivumTimetables.length !== 0) {
