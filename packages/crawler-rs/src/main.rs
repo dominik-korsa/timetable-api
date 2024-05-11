@@ -30,7 +30,7 @@ mod entities;
 
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(10);
 const CONCURRENT_REQUESTS_LIMIT: usize = 128;
-const REQUEST_SEMAPHORE_TIMEOUT: Duration = Duration::from(2);
+const REQUEST_SEMAPHORE_TIMEOUT: Duration = Duration::from_secs(2);
 const CONCURRENT_SCHOOLS_LIMIT: usize = 32;
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 10)]
