@@ -14,7 +14,7 @@ use aho_corasick::AhoCorasick;
 use dotenvy::dotenv;
 use futures::future::join_all;
 use futures::{StreamExt, TryStreamExt};
-use indicatif::ProgressBar;
+use indicatif::{ProgressBar, ProgressStyle};
 use lazy_static::lazy_static;
 use regex::{Captures, Regex};
 use scraper::{Html, Selector};
@@ -27,7 +27,7 @@ use crate::entities::SchoolWithWebsite;
 mod db;
 mod entities;
 
-#[tokio::main]
+#[tokio::main(flavor = "multi_thread", worker_threads = 10)]
 async fn main() {
     if let Err(error) = dotenv() {
         if !error.not_found() {
@@ -42,14 +42,15 @@ async fn main() {
     let schools = db.get_schools_with_website().await.unwrap();
     println!("{:?}", schools.len());
 
-    let pb = ProgressBar::new(schools.len() as u64);
+    let progress_style = ProgressStyle::with_template("[{elapsed_precise}] {wide_bar:.cyan/blue} {pos:>7}/{len:7} {percent_precise}% | ETA: {eta}").unwrap().progress_chars("##-");
+    let pb = ProgressBar::new(schools.len() as u64).with_style(progress_style);
 
     let reqwest_client = reqwest::Client::builder()
         .timeout(Duration::from_secs(10))
         .build()
         .unwrap();
 
-    let request_semaphore = Semaphore::new(16);
+    let request_semaphore = Semaphore::new(64);
 
     let x = AtomicU64::new(0);
 
@@ -83,7 +84,7 @@ async fn main() {
             pb.inc(1);
         }
     }));
-    stream.buffer_unordered(64).collect::<Vec<()>>().await;
+    stream.buffer_unordered(32).collect::<Vec<()>>().await;
 
     pb.finish();
 
