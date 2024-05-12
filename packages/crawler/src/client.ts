@@ -16,6 +16,7 @@ import {
 } from './db.js';
 import { asyncForEachWithLimit, ParalelLimit } from './paralel-limit.js';
 import { MultiBar } from 'cli-progress';
+import { Tail } from 'tail';
 
 const PARALEL_SCHOOL_LIMIT = 20;
 const PARALEL_EDUPAGE_LIMIT = 50;
@@ -50,6 +51,30 @@ export async function run() {
     );
 }
 
+export function runOnFile(filePath: string) {
+    const axiosInstance = axios.create();
+    axiosRetry(axiosInstance, { retries: 3, retryDelay: (retryCount) => retryCount * 3000 });
+
+    const multibar = new MultiBar({
+        noTTYOutput: true,
+        format: '[{bar}] {percentage}% | ETA: {eta_formatted} | {value}/{total}',
+        etaBuffer: 50,
+    });
+    const schoolsBar = multibar.create(0, 0);
+    const paralelLimit = new ParalelLimit(5);
+
+    const tail = new Tail(filePath, { fromBeginning: true });
+    tail.on('error', (error: unknown) => { console.error('Error watching file: ', error) });
+    tail.on('line', (line: string) => {
+        const [rspoId, url] = line.split('|');
+        schoolsBar.setTotal(schoolsBar.getTotal() + 1);
+        paralelLimit.runJob(async () => {
+            await checkUrl(parseInt(rspoId), url, (message: string) => { multibar.log(message); }, axiosInstance);
+            schoolsBar.increment();
+        }).catch(console.error);
+    });
+}
+
 async function checkEdupageInstance(edupageInstanceName: string, axiosInstance: Axios) {
     const scrapperClient = new ASCScrapperClient(axiosInstance, edupageInstanceName);
     const versions = await scrapperClient.getAllVersions();
@@ -65,7 +90,7 @@ export async function checkUrl(rspo_id: number, url: string, log: (message: stri
         const startTime = Date.now();
         parsedTimetable = await parse(url, axiosInstance);
         hash = createHash('sha512').update(JSON.stringify(parsedTimetable.htmls.sort())).digest('hex');
-        log(`[RSPO ${rspo_id.toString(10)}] Parsing took ${(Date.now() - startTime).toString(10)}ms`);
+        log(`[RSPO ${rspo_id.toString(10)}] Parsing took ${(Date.now() - startTime).toString(10)}ms\n`);
     } catch {
         log(`[RSPO ${rspo_id.toString(10)}] Failed to parse timetable\n`);
         return;
