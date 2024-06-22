@@ -21,7 +21,7 @@ impl Db {
         sqlx::query_as!(
             School,
             r#"SELECT
-                "name", "rspo_id", "commune_teryt" as "teryt", "geo_lat", "geo_long", "parent_rspo_id",
+                "name", "rspo_id", "commune_teryt" as "teryt", "geo_lat", "geo_long", "parent_rspo_id", "website_url",
                 "corresp_addr_street" as "address_street",
                 "corresp_addr_building_nr" as "address_building_number",
                 "corresp_addr_apartament_nr" as "address_apartament_number",
@@ -40,7 +40,7 @@ impl Db {
         sqlx::query_as!(
             School,
             r#"SELECT
-                "name", "rspo_id", "commune_teryt" as "teryt", "geo_lat", "geo_long", "parent_rspo_id",
+                "name", "rspo_id", "commune_teryt" as "teryt", "geo_lat", "geo_long", "parent_rspo_id", "website_url",
                 "corresp_addr_street" as "address_street",
                 "corresp_addr_building_nr" as "address_building_number",
                 "corresp_addr_apartament_nr" as "address_apartament_number",

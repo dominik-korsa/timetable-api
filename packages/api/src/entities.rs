@@ -14,6 +14,7 @@ pub(crate) struct School {
     pub(crate) address_apartament_number: String,
     pub(crate) address_zip_code: String,
     pub(crate) address_town: String,
+    pub(crate) website_url: Option<String>,
 }
 
 #[derive(Serialize, JsonSchema)]
