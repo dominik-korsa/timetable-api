@@ -28,7 +28,7 @@ use tokio::sync::Semaphore;
 use url::Url;
 
 use crate::db::Db;
-use crate::entities::SchoolWithWebsite;
+use crate::entities::School;
 
 mod db;
 mod entities;
@@ -85,7 +85,7 @@ async fn main() {
         let file = &file;
         async move {
             let rspo_id = school.rspo_id;
-            let timetables = crawl_school(school, &reqwest_client, request_semaphore).await;
+            let timetables = crawl_school(school.into(), &reqwest_client, request_semaphore).await;
             if !timetables.is_empty() {
                 info!(
                     "Found potential timetables for school {}:\n{:?}",
@@ -138,8 +138,11 @@ fn parse_and_normalize_url(url: &str, base: &Url) -> Option<Url> {
     normalize_url(base.join(url).ok()?)
 }
 
-async fn crawl_school(school: SchoolWithWebsite, reqwest_client: &reqwest::Client, request_semaphore: &Semaphore) -> Vec<Url> {
-    let Some(url) = Url::parse(&school.website_url).ok().and_then(normalize_url) else {
+async fn crawl_school(school: School, reqwest_client: &reqwest::Client, request_semaphore: &Semaphore) -> Vec<Url> {
+    let Some(url) = school.website_url
+        .and_then(|url| Url::parse(&url).ok())
+        .and_then(normalize_url)
+    else {
         // println!("Failed to parse URL {}", school.website_url);
         return Vec::new();
     };
