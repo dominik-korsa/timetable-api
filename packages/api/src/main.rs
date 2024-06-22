@@ -73,6 +73,8 @@ async fn main() {
         .layer(headers_layer)
         .into_make_service_with_connect_info::<SocketAddr>();
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    let addr = "0.0.0.0:3000";
+    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
+    println!("The API is listening at: http://{addr}/");
     axum::serve(listener, app_router).await.unwrap();
 }
