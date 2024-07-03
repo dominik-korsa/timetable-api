@@ -2,7 +2,7 @@ import axios, { Axios } from 'axios';
 import axiosRetry from 'axios-retry';
 import { JSDOM } from 'jsdom';
 import { findLinksByKeywords, getEdupageInstanceName, pageIsOptivum } from './utils.js';
-import { parse, ParseResult } from '@timetable-api/optivum-scrapper';
+import { OptivumScrapper, ParseResult } from '@timetable-api/optivum-scrapper';
 import { Client as ASCScrapperClient } from '@timetable-api/asc-scrapper';
 import { createHash } from 'crypto';
 import { SchoolsTable } from '@timetable-api/common';
@@ -63,7 +63,8 @@ export async function checkUrl(rspo_id: number, url: string, log: (message: stri
     let parsedTimetable: ParseResult;
     try {
         const startTime = Date.now();
-        parsedTimetable = await parse(url, axiosInstance);
+        const scrapper = new OptivumScrapper(url, axiosInstance);
+        parsedTimetable = await scrapper.parse();
         hash = createHash('sha512').update(JSON.stringify(parsedTimetable.htmls.sort())).digest('hex');
         log(`[RSPO ${rspo_id.toString(10)}] Parsing took ${(Date.now() - startTime).toString(10)}ms`);
     } catch {

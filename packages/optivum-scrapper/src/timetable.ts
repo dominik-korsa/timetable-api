@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { Axios, AxiosResponse } from 'axios';
 import { AxiosCacheInstance } from 'axios-cache-interceptor';
 import { JSDOM } from 'jsdom';
 import { Table } from './table.js';
-import { UnitList } from './types.js';
+import { Unit } from './types.js';
 import { parseUnitLink, parseUnitUrl } from './utils.js';
 import { isDefined } from '@timetable-api/common';
 
@@ -32,56 +33,12 @@ export class Timetable {
         };
     }
 
-    public async getTable(symbol: string, id: number): Promise<Table> {
+    public async getTable(symbol: string, id: string): Promise<Table> {
         const { response } = await this.getDocument(`plany/${symbol}${id}.html`);
         return new Table(response);
     }
 
-    public async getUnits(): Promise<{
-        classTables: {
-            symbol: 'o';
-            id: number;
-            table: Table;
-        }[];
-        teacherTables: {
-            symbol: 'n';
-            id: number;
-            table: Table;
-        }[];
-        roomTables: {
-            symbol: 's';
-            id: number;
-            table: Table;
-        }[];
-    }> {
-        const unitsIds = await this.getUnitIds();
-        const [classTables, teacherTables, roomTables] = await Promise.all([
-            Promise.all(
-                unitsIds.classIds.map(async (classId) => ({
-                    symbol: 'o' as const,
-                    id: classId,
-                    table: await this.getTable('o', classId),
-                })),
-            ),
-            Promise.all(
-                unitsIds.teacherIds.map(async (teacherId) => ({
-                    symbol: 'n' as const,
-                    id: teacherId,
-                    table: await this.getTable('n', teacherId),
-                })),
-            ),
-            Promise.all(
-                unitsIds.roomIds.map(async (roomId) => ({
-                    symbol: 's' as const,
-                    id: roomId,
-                    table: await this.getTable('s', roomId),
-                })),
-            ),
-        ]);
-        return { classTables, teacherTables, roomTables };
-    }
-
-    public async getUnitIds(): Promise<UnitList> {
+    public async getUnitList(): Promise<Unit[]> {
         const { response, responseUrl } = await this.getDocument(this.baseUrl);
         this.baseUrl = responseUrl;
         let document = new JSDOM(response).window.document;
@@ -94,16 +51,14 @@ export class Timetable {
             document = new JSDOM(response).window.document;
         }
         if (document.querySelector('.menu') !== null) {
-            const list: UnitList = { classIds: [], teacherIds: [], roomIds: [] };
+            const list: Unit[] = [];
             await Promise.all(
                 [...document.querySelectorAll('a[hidefocus="true"]')].map(async (listLink) => {
                     const href = listLink.getAttribute('href');
                     if (href == null) return;
                     const { response } = await this.getDocument(href);
                     const unitList = this.parseUnitList(response);
-                    list.classIds.push(...unitList.classIds);
-                    list.teacherIds.push(...unitList.teacherIds);
-                    list.roomIds.push(...unitList.roomIds);
+                    list.push(...unitList)
                 }),
             );
             return list;
@@ -117,20 +72,30 @@ export class Timetable {
         return this.parseUnitList(document.documentElement.innerHTML);
     }
 
-    public parseUnitList(html: string): UnitList {
+    public parseUnitList(html: string): Unit[] {
         const document: Document = new JSDOM(html).window.document;
-        let units: { id: number; type: string }[];
+        let units: { type: 'o' | 'n' | 's'; id: string; fullName: string }[];
         if (document.querySelector('select')) {
             const selectElements = document.querySelectorAll('select');
-            units = [...selectElements].map((selectElement) => parseUnitUrl(selectElement.value)).filter(isDefined);
+            units = [...selectElements]
+                .map((selectElement) => {
+                    const parsedLink = parseUnitUrl(selectElement.value);
+                    return parsedLink
+                        ? { id: parsedLink.id, type: parsedLink.type, fullName: selectElement.textContent! }
+                        : null;
+                })
+                .filter(isDefined);
         } else {
             const links = document.querySelectorAll('a');
-            units = [...links].map((link) => parseUnitLink(link)).filter(isDefined);
+            units = [...links]
+                .map((link) => {
+                    const parsedLink = parseUnitLink(link);
+                    return parsedLink
+                        ? { id: parsedLink.id, type: parsedLink.type, fullName: link.textContent! }
+                        : null;
+                })
+                .filter(isDefined);
         }
-        return {
-            classIds: units.filter((unit) => unit.type === 'o').map((unit) => unit.id),
-            teacherIds: units.filter((unit) => unit.type === 'n').map((unit) => unit.id),
-            roomIds: units.filter((unit) => unit.type === 's').map((unit) => unit.id),
-        };
+        return units;
     }
 }

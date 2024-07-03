@@ -1,7 +1,6 @@
 export interface TimetableTimeSlot {
     id: string;
     name: string;
-    short: string;
     beginMinute: number;
     endMinute: number;
 }
@@ -69,7 +68,6 @@ export interface TimetableCommonGroup {
     id: string;
     short: string;
     classId: string;
-    entireClass: boolean;
     color: string | null;
     subjectId: string | null;
 }
@@ -89,7 +87,6 @@ export interface TimetableStudent {
 }
 
 export interface TimetableLesson {
-    id: string | null;
     timeSlotId: string;
     dayId: string;
     weekId: string | null;

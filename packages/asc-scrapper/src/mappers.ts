@@ -37,8 +37,7 @@ const weekdayIsoNumber: Partial<Record<string, number>> = {
 
 export const mapPeriodsTableRow = (row: PeriodsTableRow): TimetableTimeSlot => ({
     id: row.id,
-    name: row.name,
-    short: row.short,
+    name: row.short,
     beginMinute: parseTime(row.starttime),
     endMinute: parseTime(row.endtime),
 });
@@ -102,7 +101,6 @@ export const mapGroupsTableRow = (row: GroupsTableRow): TimetableCommonGroup => 
     id: row.id,
     short: row.name,
     classId: row.classid,
-    entireClass: row.entireclass,
     color: row.color,
     subjectId: null,
 });

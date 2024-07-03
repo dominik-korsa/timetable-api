@@ -104,13 +104,14 @@ export class Client {
         const groupsTableRows = getTableRowsById<GroupsTableRow>(tables, 'groups');
         const studentsTableRows = getTableRowsById<StudentsTableRow>(tables, 'students');
         const lessonsTableRows = getTableRowsById<LessonsTableRow>(tables, 'lessons');
-        const cardsTableRows = getTableRowsById<CardsTableRow>(tables, 'cards')
+        const cardsTableRows = getTableRowsById<CardsTableRow>(tables, 'cards');
         const lessonsCards = new Map<string, CardsTableRow[]>();
-        cardsTableRows.forEach(card => {
+        cardsTableRows.forEach((card) => {
             if (card.period === '' || card.days === '' || card.weeks === '') return;
             const existingLessonsCardsItem = lessonsCards.get(card.lessonid);
-            if (existingLessonsCardsItem) existingLessonsCardsItem.push(card); else lessonsCards.set(card.lessonid, [card]);
-        })
+            if (existingLessonsCardsItem) existingLessonsCardsItem.push(card);
+            else lessonsCards.set(card.lessonid, [card]);
+        });
         return {
             common: {
                 timeSlots: periodsTableRow.map(mapPeriodsTableRow),
@@ -122,7 +123,7 @@ export class Client {
                 classes: classesTableRows.map(mapClassesTableRow),
                 subjects: subjectsTableRows.map(mapSubjectsTableRow),
                 teachers: teachersTableRows.map(mapTeachersTableRow),
-                commonGroups: groupsTableRows.map(mapGroupsTableRow),
+                commonGroups: groupsTableRows.filter((row: GroupsTableRow) => !row.entireclass).map(mapGroupsTableRow),
                 interclassGroups: [],
                 students: studentsTableRows.map(mapStudentsTableRow),
             },
@@ -130,12 +131,15 @@ export class Client {
                 .map((lessonsRow) => {
                     const cards = lessonsCards.get(lessonsRow.id) ?? [];
                     return cards.map((cardsRow) => {
-                        const daysDef = daysDefsTableRows.find(daysDefsRow => daysDefsRow.vals.length === 1 && daysDefsRow.vals[0] === cardsRow.days);
+                        const daysDef = daysDefsTableRows.find(
+                            (daysDefsRow) => daysDefsRow.vals.length === 1 && daysDefsRow.vals[0] === cardsRow.days,
+                        );
                         const weeksDef = weeksDefsTableRows.find(
                             (weeksDefsRow) => weeksDefsRow.vals.length === 1 && weeksDefsRow.vals[0] === cardsRow.weeks,
                         );
                         const termsDef = termsDefsTableRows.find(
-                            (termsDefsRow) => termsDefsRow.vals.length === 1 && termsDefsRow.vals[0] === lessonsRow.terms,
+                            (termsDefsRow) =>
+                                termsDefsRow.vals.length === 1 && termsDefsRow.vals[0] === lessonsRow.terms,
                         );
                         if (!daysDef) {
                             throw Error('Missing daysDef');
@@ -147,14 +151,15 @@ export class Client {
                             throw Error('Missing termsDef');
                         }
                         return {
-                            id: cardsRow.id,
                             timeSlotId: cardsRow.period,
                             dayId: daysTableRows[daysDefsTableRows.indexOf(daysDef)].id,
                             weekId: weeksTableRows[weeksDefsTableRows.indexOf(weeksDef)].id,
                             subjectId: lessonsRow.subjectid,
                             teacherIds: lessonsRow.teacherids,
                             roomIds: cardsRow.classroomids,
-                            groupIds: lessonsRow.groupids,
+                            groupIds: lessonsRow.groupids.filter(
+                                (group) => !(groupsTableRows.find((row) => row.id === group)?.entireclass ?? false),
+                            ),
                             classIds: lessonsRow.classids,
                             periodId: termsTableRows[termsDefsTableRows.indexOf(termsDef)].id,
                             seminarGroup: lessonsRow.seminargroup,
@@ -170,10 +175,12 @@ export class Client {
 
     public async getAllVersions() {
         const versionList = await this.getTimetableVersionList();
-        const versions = await Promise.all(versionList.map(async version => {
-            const versionData = await this.getTimetableVersion(version.number);
-            return { data: versionData, ...version}
-        }))
+        const versions = await Promise.all(
+            versionList.map(async (version) => {
+                const versionData = await this.getTimetableVersion(version.number);
+                return { data: versionData, ...version };
+            }),
+        );
         return versions;
     }
 }
