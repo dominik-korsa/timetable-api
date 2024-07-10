@@ -1,4 +1,6 @@
-import { Class, Lesson } from './types.js';
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
+
+import { LessonClass, Lesson } from './types.js';
 
 export const parseTime = (value: string): number => {
     const [hours, minutes] = value.split(':').map((part) => parseInt(part, 10));
@@ -10,8 +12,8 @@ export const parseUnitUrl = (url: string) => {
     const match = unitUrlRegex.exec(url);
     if (match === null) return null;
     return {
-        type: match[1],
-        id: parseInt(match[2], 10),
+        type: match[1] as 'o' | 'n' | 's',
+        id: match[2],
     };
 };
 
@@ -68,7 +70,7 @@ export const splitByComma = (fragment: Element | DocumentFragment) => {
 const parseTeacherFullNameRegex = /(.+?) \((.+?)\)/;
 export const parseTeacherFullName = (fullName: string) => {
     const match = parseTeacherFullNameRegex.exec(fullName);
-    return match ? { name: match[1], initials: match[2] } : null;
+    return match ? { name: match[1], short: match[2] } : null;
 };
 
 const parseClassCodeRegex = /([0-9]|r|t|c|p)(.+?)/;
@@ -80,88 +82,78 @@ export const parseClassCode = (code: string) => {
 export const parseLesson = (fragment: DocumentFragment): Lesson => {
     if (!fragment.querySelector('.p')) {
         return {
-            teacherId: null,
-            teacherInitials: null,
-            roomId: null,
-            roomCode: null,
+            teacher: null,
+            room: null,
             classes: [],
-            subjectCode: null,
-            interclassGroupCode: null,
+            subjectId: null,
+            interclassGroupId: null,
             comment: fragment.textContent?.trim() ?? null,
         };
     }
 
-    let commonGroupCode: string | null = null;
-    let interclassGroupCode: string | null = null;
-    let roomId: number | null = null;
-    let roomCode: string | null = null;
-    let teacherId: number | null = null;
-    let teacherInitials: string | null = null;
+    // Interclass Group
+    const interclassGroupTag = [...fragment.querySelectorAll('.p')].find(
+        (subjectTag) => subjectTag.textContent?.startsWith('#'),
+    );
+    const interclassGroupId = interclassGroupTag?.textContent ?? null;
+    interclassGroupTag?.remove();
 
-    let subjectCode = [...fragment.querySelectorAll('.p')].map((subjectTag) => subjectTag.textContent).join('');
-    fragment.querySelectorAll('.p').forEach((subjectTag) => {
-        subjectTag.remove();
-    });
-    if (subjectCode.includes('-')) {
-        commonGroupCode = subjectCode.split('-')[subjectCode.split('-').length - 1];
-        subjectCode = subjectCode.replace(`-${commonGroupCode}`, '');
+    // Subject and common group
+    const subjectTag = fragment.querySelector('.p')!;
+    let subjectId = subjectTag.textContent!;
+    let groupShort_: string | null = null;
+    if (subjectId.includes('-') && interclassGroupId === null) {
+        groupShort_ = subjectId.split('-')[subjectId.split('-').length - 1];
+        subjectId = subjectId.replace(`-${groupShort_}`, '');
     }
-    if (subjectCode.includes('#')) {
-        interclassGroupCode = subjectCode.split('#')[subjectCode.split('#').length - 1];
-        subjectCode = subjectCode.replace(`#${interclassGroupCode}`, '');
-    }
+    subjectTag.remove();
 
+    // Room
+    let room: { id: string | null; short: string } | null = null;
     const roomTag = fragment.querySelector('.s');
     if (roomTag !== null) {
         if (roomTag.textContent !== '@') {
-            roomId = parseUnitLink(roomTag)?.id ?? null;
-            roomCode = roomTag.textContent ?? null;
+            room = { id: parseUnitLink(roomTag)?.id ?? null, short: roomTag.textContent! };
         }
         roomTag.remove();
     }
 
+    // Teacher
+    let teacher: { id: string | null; short: string } | null = null;
     const teacherTag = fragment.querySelector('.n');
     if (teacherTag !== null) {
-        teacherId = parseUnitLink(teacherTag)?.id ?? null;
-        teacherInitials = teacherTag.textContent;
+        teacher = { id: parseUnitLink(teacherTag)?.id ?? null, short: teacherTag.textContent! };
         teacherTag.remove();
     }
-    const classes = splitByComma(fragment).map((classDocument): Class => {
-        const classTag = classDocument.querySelector('.o');
-        const id = parseUnitLink(classTag)?.id ?? null;
-        const code = classTag?.textContent ?? null;
-        classTag?.remove();
-        let groupCode = commonGroupCode ?? classDocument.textContent?.trim().replace('-', '') ?? null;
-        if (groupCode === '') groupCode = null;
-        return {
-            id,
-            code,
-            groupCode,
-        };
-    });
+
+    // Classes and common groups
+    let classes: LessonClass[] = [];
+    if (fragment.querySelector('.o')) {
+        classes = splitByComma(fragment).map((classDocument): LessonClass => {
+            const classTag = classDocument.querySelector('.o')!;
+            const id = parseUnitLink(classTag)?.id ?? null;
+            const short = classTag.textContent ?? null;
+            classTag.remove();
+            let groupShort: string | null = groupShort_ ?? classDocument.textContent?.trim().replace('-', '') ?? null;
+            if (groupShort === '') groupShort = null;
+            return {
+                id,
+                short,
+                groupShort,
+            };
+        });
+    } else if (groupShort_ !== null) {
+        classes.push({ id: null, short: null, groupShort: groupShort_ });
+    }
     return {
-        subjectCode,
-        teacherId,
-        teacherInitials,
-        roomId,
-        roomCode,
+        subjectId,
+        teacher,
+        room,
         classes,
         comment: null,
-        interclassGroupCode,
+        interclassGroupId,
     };
 };
 
-export function getTeacherKey(currentUnit: { id: number; symbol: string }, id: number | null, code: string | null) {
-    if (currentUnit.symbol === 'n') return currentUnit.id.toString();
-    return id !== null || code !== null ? id?.toString() ?? `#${code}` : null;
-}
+export const getUnitKey = (unit: { id: string | null; short: string }) => (unit.id ?? `@${unit.short}`);
 
-export function getRoomKey(currentUnit: { id: number; symbol: string }, id: number | null, code: string | null) {
-    if (currentUnit.symbol === 's') return currentUnit.id.toString();
-    return id !== null || code !== null ? id?.toString() ?? `#${code}` : null;
-}
-
-export function getClassKey(currentUnit: { id: number; symbol: string }, id: number | null, code: string | null) {
-    if (currentUnit.symbol === 'o') return currentUnit.id.toString();
-    return id !== null || code !== null ? id?.toString() ?? `#${code}` : null;
-}

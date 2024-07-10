@@ -1,7 +1,7 @@
 import { slugify } from '@timetable-api/common';
 import { parseLesson, parseTime, splitByBr } from './utils.js';
 import { JSDOM } from 'jsdom';
-import { LessonTimeSlot, TableData, TimeSlot, Day } from './types.js';
+import { LessonTimeSlot, TimeSlot, Day } from './types.js';
 
 export class Table {
     private readonly document;
@@ -57,6 +57,10 @@ export class Table {
         });
     }
 
+    public getRowsLength() {
+        return this.rows.length;
+    }
+
     public getDays(): Day[] {
         return [...this.mainTable.querySelectorAll('tr:first-of-type > th:nth-child(n+3)')].map((day, index) => {
             const dayName = day.textContent?.trim() ?? '-';
@@ -80,22 +84,11 @@ export class Table {
                     }))
                     .filter(
                         ({ lesson }) =>
-                            (lesson.comment !== null && lesson.comment !== '') || lesson.subjectCode !== null,
+                            (lesson.comment !== null && lesson.comment !== '') || lesson.subjectId !== null,
                     );
                 lessons.push(...groups);
             });
         });
         return lessons;
-    }
-
-    public getData(): TableData {
-        return {
-            fullName: this.getFullName(),
-            generationDate: this.getGenerationDate(),
-            validationDate: this.getValidationDate(),
-            timeSlots: this.getTimeSlots(),
-            days: this.getDays(),
-            lessons: this.getLessons(),
-        };
     }
 }
