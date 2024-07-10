@@ -181,7 +181,7 @@ export class OptivumScrapper {
 
     private handleLessonUnits(unit: ClientUnit, lesson: Lesson) {
         // Teacher
-        const teacherKey = unit.type === 'n' ? unit.id : getUnitKey(lesson.teacher);
+        const teacherKey = lesson.teacher ? getUnitKey(lesson.teacher) : unit.type === 'n' ? unit.id : null;
         if (teacherKey !== null && !this.teachers.has(teacherKey)) {
             this.teachers.set(teacherKey, {
                 id: teacherKey,
@@ -194,7 +194,7 @@ export class OptivumScrapper {
         }
 
         // Room
-        const roomKey = unit.type === 's' ? unit.id : getUnitKey(lesson.room);
+        const roomKey = lesson.room ? getUnitKey(lesson.room) : unit.type === 's' ? unit.id : null;
         if (roomKey !== null) {
             const existingRoom = this.rooms.get(roomKey);
             if (!existingRoom) {
@@ -218,8 +218,7 @@ export class OptivumScrapper {
         const commonGroupKeys: string[] = [];
         const classKeys: string[] = unit.type === 'o' ? [unit.id] : [];
         lesson.classes.forEach((class_) => {
-            if (class_.short === null) return;
-            const classKey = getUnitKey(class_ as { id: string | null; short: string });
+            const classKey = class_.short !== null ? getUnitKey(class_ as { id: string | null; short: string }) : null;
             if (classKey !== null) {
                 classKeys.push(classKey);
                 const existingClass = this.classes.get(classKey);
@@ -235,7 +234,7 @@ export class OptivumScrapper {
                 }
                 if (existingClass?.short === null) {
                     existingClass.short = class_.short;
-                    if (existingClass.fullName !== null)
+                    if (existingClass.fullName !== null && class_.short !== null)
                         existingClass.name = existingClass.fullName.replace(class_.short, '').trim();
                 }
             }

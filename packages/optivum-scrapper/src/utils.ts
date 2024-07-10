@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
+
 import { LessonClass, Lesson } from './types.js';
 
 export const parseTime = (value: string): number => {
@@ -154,5 +155,5 @@ export const parseLesson = (fragment: DocumentFragment): Lesson => {
     };
 };
 
-export const getUnitKey = (unit: { id: string | null; short: string } | null) => (unit ? unit.id ?? `@${unit.short}` : null);
+export const getUnitKey = (unit: { id: string | null; short: string }) => (unit.id ?? `@${unit.short}`);
 
