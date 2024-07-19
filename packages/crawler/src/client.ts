@@ -65,7 +65,7 @@ export async function checkUrl(rspo_id: number, url: string, log: (message: stri
         const scrapper = new OptivumScrapper(url, axiosInstance);
         parsedTimetable = await scrapper.parse();
         hash = createHash('sha512').update(JSON.stringify(parsedTimetable.htmls.sort())).digest('hex');
-        log(`[RSPO ${rspo_id.toString(10)}] Parsing took ${(Date.now() - startTime).toString(10)}ms`);
+        log(`[RSPO ${rspo_id.toString(10)}] Parsing took ${(Date.now() - startTime).toString(10)}ms\n`);
     } catch {
         log(`[RSPO ${rspo_id.toString(10)}] Failed to parse timetable\n`);
         return;
