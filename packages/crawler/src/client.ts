@@ -1,14 +1,13 @@
 import axios, { Axios } from 'axios';
 import axiosRetry from 'axios-retry';
-import { JSDOM } from 'jsdom';
+import * as cheerio from "cheerio";
 import { findLinksByKeywords, getEdupageInstanceName, pageIsOptivum } from './utils.js';
 import { OptivumScrapper, ParseResult } from '@timetable-api/optivum-scrapper';
 import { Client as ASCScrapperClient } from '@timetable-api/asc-scrapper';
 import { createHash } from 'crypto';
-import { SchoolsTable } from '@timetable-api/common';
 import {
     getEdupageInstanceNames,
-    getSchoolsWithWebiste,
+    getSchoolWebsites,
     pushEdupageInstances,
     pushEdupageTimetableVersions,
     pushOptivumTimetableVersion,
@@ -25,17 +24,17 @@ export async function run() {
     axiosRetry(axiosInstance, { retries: 3, retryDelay: (retryCount) => retryCount * 3000 });
 
     console.log('Downloading school list from database...');
-    const schools = await getSchoolsWithWebiste();
+    const schoolWebsites = await getSchoolWebsites();
     const multibar = new MultiBar({
         noTTYOutput: true,
         format: '[{bar}] {percentage}% | ETA: {eta_formatted} | {value}/{total}',
         etaBuffer: 50,
     });
-    const schoolsBar = multibar.create(schools.length, 0);
+    const schoolsBar = multibar.create(schoolWebsites.length, 0);
     await asyncForEachWithLimit(
-        schools,
-        async (school) => {
-            await checkSchool(school, axiosInstance, (message: string) => { multibar.log(message) });
+        schoolWebsites,
+        async (schoolWebsite) => {
+            await checkSchoolWebsite(schoolWebsite, axiosInstance, (message: string) => { multibar.log(message) });
             schoolsBar.increment();
         },
         new ParalelLimit(PARALEL_SCHOOL_LIMIT),
@@ -79,8 +78,9 @@ export async function checkUrl(rspo_id: number, url: string, log: (message: stri
     }
 }
 
-async function checkSchool(
-    school: SchoolsTable & { website_url: string },
+
+async function checkSchoolWebsite(
+    school: { rspo_id: number; website_url: string },
     axiosInstance: Axios,
     log: (message: string) => void
 ) {
@@ -91,11 +91,11 @@ async function checkSchool(
         optivumTimetables = result.optivumTimetables;
         edupageInstances = result.edupageInstances;
     } catch {
-        log(`[RSPO ${school.rspo_id}] An er ror occurred while getting timetables\n`);
+        log(`[RSPO ${school.rspo_id}] An error occurred while getting timetables\n`);
         return;
     }
     if (optivumTimetables.length !== 0) {
-        log(`[RSPO ${school.rspo_id}] Found OPTIVUM timetables, parsing...\n`);
+        log(`[RSPO ${school.rspo_id}] Found OPTIVUM timetables ${optivumTimetables.length}, parsing...\n`);
     }
     await Promise.all(
         optivumTimetables.map((url) => checkUrl(school.rspo_id, url, log, axiosInstance)),
@@ -127,8 +127,8 @@ async function findTimetables(
         return { url, optivumTimetables: [], edupageInstances: [] };
     }
     checkedLinks.add(url);
-    const document = new JSDOM(response.data.replace(/<style(\s|>).*?<\/style>/gi, '')).window.document;
-    const links = [...new Set(findLinksByKeywords(document).map((link) => new URL(link, url).toString()))];
+    const $ = cheerio.load(response.data);
+    const links = [...new Set(findLinksByKeywords($).map((link) => new URL(link, url).toString()))];
     if (depthLimit > 0) {
         await Promise.all(
             links.map(async (link) => {
@@ -140,8 +140,8 @@ async function findTimetables(
             }),
         );
     }
-    if (pageIsOptivum(document)) optivumTimetables.add(url);
-    const edupageInstanceName = getEdupageInstanceName(document);
+    if (pageIsOptivum($)) optivumTimetables.add(url);
+    const edupageInstanceName = getEdupageInstanceName($);
     if (edupageInstanceName !== undefined) edupageInstances.add(edupageInstanceName);
     return { url, optivumTimetables: [...optivumTimetables], edupageInstances: [...edupageInstances] };
 }

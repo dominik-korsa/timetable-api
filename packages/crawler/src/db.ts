@@ -24,8 +24,8 @@ const dbClient = knex({
     useNullAsDefault: true,
 });
 
-export async function getSchoolsWithWebiste() {
-    return dbClient<SchoolsTable & { website_url: string }>('schools').whereNotNull('website_url');
+export async function getSchoolWebsites() {
+    return (await dbClient<{ rspo_id: number; website_url: string }>('schools').select("rspo_id").select("website_url").whereNotNull('website_url')).reverse();
 }
 
 export async function pushOptivumTimetableVersion(
