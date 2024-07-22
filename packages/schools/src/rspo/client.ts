@@ -11,7 +11,7 @@ export class RspoApiClient {
         institutionTypeId: number | undefined;
         includeLiquidated: boolean | undefined;
         page: number | undefined;
-    }): Promise<{ data: Institution[]; nextPageAvalible: boolean }> {
+    }): Promise<{ data: Institution[]; nextPageAvailable: boolean }> {
         const response = await this.axios.get<{
             'hydra:member': Institution[];
             'hydra:view': { 'hydra:next': string | undefined };
@@ -28,7 +28,7 @@ export class RspoApiClient {
         });
         return {
             data: response.data['hydra:member'],
-            nextPageAvalible: response.data['hydra:view']['hydra:next'] !== undefined,
+            nextPageAvailable: response.data['hydra:view']['hydra:next'] !== undefined,
         };
     }
 

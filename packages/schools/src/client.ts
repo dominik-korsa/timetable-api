@@ -23,9 +23,9 @@ export async function run(institutionTypeIds: number[]): Promise<void> {
             while (true) {
                 console.log(`[Institution type: ${institutionTypeId}, page: ${page}] Fetching data from RSPO API...`);
                 let data: Institution[] | undefined;
-                let nextPageAvalible: boolean | undefined;
+                let nextPageAvailable: boolean | undefined;
                 try {
-                    ({ data, nextPageAvalible } = await rspoClient.getInstitutions({
+                    ({ data, nextPageAvailable } = await rspoClient.getInstitutions({
                         institutionTypeId,
                         includeLiquidated: false,
                         page,
@@ -61,7 +61,7 @@ export async function run(institutionTypeIds: number[]): Promise<void> {
                     )
                     .onConflict('rspo_id')
                     .merge();
-                if (!nextPageAvalible) {
+                if (!nextPageAvailable) {
                     break;
                 }
                 page++;
