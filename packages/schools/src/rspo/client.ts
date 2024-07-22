@@ -1,10 +1,9 @@
 import { setupCache } from 'axios-cache-interceptor';
-import Axios from 'axios';
+import axios from 'axios';
 import { Institution } from './types.js';
 
 export class RspoApiClient {
-    private readonly axios = setupCache(Axios, {});
-    private readonly rspoBaseUrl = 'https://api-rspo.mein.gov.pl/api';
+    private readonly axios = setupCache(axios.create({ baseURL: 'https://api-rspo.mein.gov.pl/api' }), { });
     private readonly userAgent = 'Lekcje One API';
 
     async getInstitutions(params: {
@@ -15,7 +14,7 @@ export class RspoApiClient {
         const response = await this.axios.get<{
             'hydra:member': Institution[];
             'hydra:view': { 'hydra:next': string | undefined };
-        }>(`${this.rspoBaseUrl}/placowki`, {
+        }>(`/placowki`, {
             params: {
                 typ_podmiotu_id: params.institutionTypeId,
                 zlikwidowana: params.includeLiquidated,
