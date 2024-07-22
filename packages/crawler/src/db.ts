@@ -15,17 +15,13 @@ const dbClient = knex({
     client: 'pg',
     version: '7.2',
     connection: {
-        user: process.env.DB_USER,
-        host: process.env.DB_HOST,
-        database: process.env.DB_NAME,
-        password: process.env.DB_PASSWORD,
-        port: Number(process.env.DB_PORT),
+        connectionString: process.env.DATABASE_URL,
     },
     useNullAsDefault: true,
 });
 
-export async function getSchoolsWithWebiste() {
-    return dbClient<SchoolsTable & { website_url: string }>('schools').whereNotNull('website_url');
+export async function getSchoolWebsites() {
+    return await dbClient<{ rspo_id: number; website_url: string }>('schools').select("rspo_id").select("website_url").whereNotNull('website_url');
 }
 
 export async function pushOptivumTimetableVersion(
