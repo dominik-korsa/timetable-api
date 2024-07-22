@@ -31,14 +31,4 @@ export class RspoApiClient {
             nextPageAvailable: response.data['hydra:view']['hydra:next'] !== undefined,
         };
     }
-
-    async getSchoolInfo(rspoId: number): Promise<Institution> {
-        const response = await this.axios.get<Institution>(`https://api-rspo.mein.gov.pl/api/placowki/${rspoId}`, {
-            headers: {
-                'User-Agent': this.userAgent,
-                Accept: 'application/json',
-            },
-        });
-        return response.data;
-    }
 }
