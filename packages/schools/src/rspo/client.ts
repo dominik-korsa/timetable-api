@@ -7,17 +7,17 @@ export class RspoApiClient {
     private readonly userAgent = 'Lekcje One API';
 
     async getInstitutions(params: {
-        institutionTypeId: number | undefined;
-        includeLiquidated: boolean | undefined;
-        page: number | undefined;
-    }): Promise<{ data: Institution[]; nextPageAvailable: boolean }> {
+        institutionTypeId?: number;
+        includeLiquidated?: boolean;
+        page?: number;
+    }): Promise<{ data: Institution[]; totalItems: number }> {
         const response = await this.axios.get<{
             'hydra:member': Institution[];
-            'hydra:view': { 'hydra:next': string | undefined };
+            'hydra:totalItems': number;
         }>(`/placowki`, {
             params: {
                 typ_podmiotu_id: params.institutionTypeId,
-                zlikwidowana: params.includeLiquidated,
+                zlikwidowana: params.includeLiquidated ?? false,
                 page: params.page,
             },
             headers: {
@@ -27,7 +27,7 @@ export class RspoApiClient {
         });
         return {
             data: response.data['hydra:member'],
-            nextPageAvailable: response.data['hydra:view']['hydra:next'] !== undefined,
+            totalItems: response.data['hydra:totalItems'],
         };
     }
 }
