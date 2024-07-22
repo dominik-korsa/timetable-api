@@ -1,6 +1,7 @@
 import { RspoApiClient } from './rspo/client.js';
 import knex from 'knex';
 import dotenv from 'dotenv';
+import cliProgress from "cli-progress";
 
 dotenv.config();
 
@@ -19,10 +20,10 @@ export async function run(institutionTypeIds: number[]): Promise<void> {
         institutionTypeIds.map(async (institutionTypeId: number) => {
             let page = 1;
             let pageLength: number;
+            const progressBar = new cliProgress.SingleBar({ noTTYOutput: true, format: `T: ${institutionTypeId.toString().padStart(3)} | {bar} | {percentage}% | {value}/{total}` }, cliProgress.Presets.shades_classic);
             do {
-                console.log(`Type: ${institutionTypeId} | Page: ${page} `) // TODO: Progress bar
                 try {
-                    const { data } = await rspoClient.getInstitutions({ institutionTypeId, page });
+                    const { data, totalItems } = await rspoClient.getInstitutions({ institutionTypeId, page });
                     pageLength = data.length;
                     if (!pageLength) break;
                     await dbClient('schools')
@@ -49,12 +50,15 @@ export async function run(institutionTypeIds: number[]): Promise<void> {
                         )
                         .onConflict('rspo_id')
                         .merge();
+                        if (page === 1) progressBar.start(totalItems, pageLength)
+                        else progressBar.update(page * 100 - 100 + pageLength)
                 } catch (error) {
                     console.warn(error);
                     break;
                 }
                 page++;
             } while (pageLength === 100);
+            progressBar.stop();
         }),
     );
     console.log('Done!');
