@@ -10,6 +10,9 @@
   },
   "dependencies": {
     "@timetable-api/common": "workspace:*",
+    "axios": "^1.7.7",
+    "axios-retry": "^4.5.0",
+    "cheerio": "^1.0.0",
     "dotenv": "^16.4.5",
     "knex": "^3.1.0",
     "pg": "^8.11.5"
