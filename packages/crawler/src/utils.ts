@@ -4,6 +4,6 @@ export function areUrlsEqualIgnoringQuery(url1: string, url2: string) {
 
     return (
         parsedUrl1.host === parsedUrl2.host &&
-        parsedUrl1.pathname.replace(/^.+\.\/$/gm, '') === parsedUrl2.pathname.replace(/^.+\.\/$/gm, '')
+        parsedUrl1.pathname.replace(/\b(\/)/gm, '') === parsedUrl2.pathname.replace(/\b(\/)/gm, '')
     );
 }
