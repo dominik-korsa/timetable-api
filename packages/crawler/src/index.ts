@@ -13,8 +13,8 @@ async function main() {
         websites,
         async ({ rspo_id, website_url }) =>
             crawlWebsite(rspo_id, website_url)
-                .then(() => {
-                    console.log('done!'); //TODO: Progress bar
+                .then(({ checked }) => {
+                    console.log(`[RSPO: ${rspo_id.toString()}] Done! Checked ${checked.toString()} pages.`); //TODO: Progress bar
                 })
                 .catch((error: unknown) => {
                     console.warn(`Error, school id: ${rspo_id.toString()}`, error);
