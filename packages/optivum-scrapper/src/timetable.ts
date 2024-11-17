@@ -76,15 +76,14 @@ export class Timetable {
         const document: Document = new JSDOM(html).window.document;
         let units: { type: 'o' | 'n' | 's'; id: string; fullName: string }[];
         if (document.querySelector('select')) {
-            const selectElements = document.querySelectorAll('select');
-            units = [...selectElements]
-                .map((selectElement) => {
-                    const parsedLink = parseUnitUrl(selectElement.value);
-                    return parsedLink
-                        ? { id: parsedLink.id, type: parsedLink.type, fullName: selectElement.textContent! }
-                        : null;
-                })
-                .filter(isDefined);
+            units = [...document.querySelectorAll('select')].flatMap((select) => {
+                const type = select.querySelector('option:first-child')!.textContent![0] as 'o' | 'n' | 's';
+                return [...select.querySelectorAll('option:not(:first-child)')].map((option) => ({
+                    id: option.getAttribute('value')!,
+                    type,
+                    fullName: option.textContent!,
+                }));
+            });
         } else {
             const links = document.querySelectorAll('a');
             units = [...links]
