@@ -1,5 +1,6 @@
 import knex from 'knex';
 import { config } from 'dotenv';
+import { EdupageInstancesTable } from '@timetable-api/common';
 
 config();
 
@@ -17,4 +18,11 @@ export function getSchoolWebsites() {
         .select('rspo_id')
         .select('website_url')
         .whereNotNull('website_url');
+}
+
+export function pushEdupageInstances(rspoId: number, instances: string[]) {
+    return client<EdupageInstancesTable>('edupage_instances')
+        .insert(instances.map((instanceName) => ({ school_rspo_id: rspoId, instance_name: instanceName })))
+        .onConflict()
+        .ignore();
 }

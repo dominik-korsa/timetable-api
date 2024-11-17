@@ -4,6 +4,7 @@ import * as cheerio from 'cheerio';
 import { isOptivumCandidate } from './optivum.js';
 import { getEdupageInstance } from './edupage.js';
 import { areUrlsEqualIgnoringQuery } from './utils.js';
+import { pushEdupageInstances } from './db.js';
 
 const axiosInstance = axios.create();
 axiosRetry(axiosInstance, { retries: 3, retryDelay: (retryCount) => retryCount * 3000 });
@@ -32,9 +33,7 @@ export default async function crawlWebsite(rspoId: number, url: string) {
             // TODO: Handle optivum candidate
             continue;
         }
-        if (result.edupage !== undefined) {
-            edupage.add(result.edupage);
-        }
+        if (result.edupage !== undefined) edupage.add(result.edupage);
 
         result.links?.forEach((link) => {
             const newUrl = new URL(link, pageUrl);
@@ -45,6 +44,7 @@ export default async function crawlWebsite(rspoId: number, url: string) {
     [...edupage].forEach((e) => {
         console.log(`\x1b[43m[RSPO: ${rspoId.toString()}] Found an edupage instance (${e})\x1b[0m`);
     });
+    if (edupage.size) await pushEdupageInstances(rspoId, [...edupage]);
     return { checked: checked.size };
 }
 
