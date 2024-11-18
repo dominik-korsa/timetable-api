@@ -5,12 +5,12 @@ import cliProgress from "cli-progress";
 
 dotenv.config();
 
+if (process.env.DATABASE_URL === undefined) throw Error('Missing required environment variable: DATABASE_URL');
+
 const dbClient = knex({
     client: 'pg',
     version: '7.2',
-    connection: {
-        connectionString: process.env.DATABASE_URL,
-    },
+    connection: process.env.DATABASE_URL,
     useNullAsDefault: true,
 });
 
