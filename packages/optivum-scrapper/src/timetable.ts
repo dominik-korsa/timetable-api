@@ -58,7 +58,7 @@ export class Timetable {
                     if (href == null) return;
                     const { response } = await this.getDocument(href);
                     const unitList = this.parseUnitList(response);
-                    list.push(...unitList)
+                    list.push(...unitList);
                 }),
             );
             return list;
@@ -77,12 +77,17 @@ export class Timetable {
         let units: { type: 'o' | 'n' | 's'; id: string; fullName: string }[];
         if (document.querySelector('select')) {
             units = [...document.querySelectorAll('select')].flatMap((select) => {
-                const type = select.querySelector('option:first-child')!.textContent![0] as 'o' | 'n' | 's';
-                return [...select.querySelectorAll('option:not(:first-child)')].map((option) => ({
-                    id: option.getAttribute('value')!,
-                    type,
-                    fullName: option.textContent!,
-                }));
+                const type = select.querySelector('option:first-child')?.textContent?.[0];
+                if (type !== 'o' && type !== 'n' && type !== 's') throw new Error('Unknown type');
+                return [...select.querySelectorAll('option:not(:first-child)')].map((option) => {
+                    const id = option.getAttribute('value');
+                    if (id === null) throw new Error('Missing option value');
+                    return {
+                        id,
+                        type,
+                        fullName: option.textContent ?? '',
+                    };
+                });
             });
         } else {
             const links = document.querySelectorAll('a');
