@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
+import { createHash } from 'crypto';
 import { LessonClass, Lesson } from './types.js';
 
 export const parseTime = (value: string): number => {
@@ -157,3 +158,5 @@ export const parseLesson = (fragment: DocumentFragment): Lesson => {
 
 export const getUnitKey = (unit: { id: string | null; short: string }) => (unit.id ?? `@${unit.short}`);
 
+export const getTimetableHash = (htmls: string[]) =>
+    createHash('sha512').update(JSON.stringify(htmls.sort())).digest('hex');
