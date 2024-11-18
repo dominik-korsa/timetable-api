@@ -5,16 +5,12 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+if (process.env.DATABASE_URL === undefined) throw Error('Missing required environment variable: DATABASE_URL');
+
 const dbClient = knex({
     client: 'pg',
     version: '7.2',
-    connection: {
-        user: process.env.DB_USER,
-        host: process.env.DB_HOST,
-        database: process.env.DB_NAME,
-        password: process.env.DB_PASSWORD,
-        port: Number(process.env.DB_PORT),
-    },
+    connection: process.env.DATABASE_URL,
     useNullAsDefault: true,
 });
 
