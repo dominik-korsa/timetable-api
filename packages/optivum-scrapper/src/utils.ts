@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
 import { createHash } from 'crypto';
-import { LessonClass, Lesson } from './types.js';
+import { LessonClass, Lesson, UnitType } from './types.js';
 
 export const parseTime = (value: string): number => {
     const [hours, minutes] = value.split(':').map((part) => parseInt(part, 10));
@@ -13,7 +13,7 @@ export const parseUnitUrl = (url: string) => {
     const match = unitUrlRegex.exec(url);
     if (match === null) return null;
     return {
-        type: match[1] as 'o' | 'n' | 's',
+        type: match[1] as  UnitType,
         id: match[2],
     };
 };
@@ -158,5 +158,8 @@ export const parseLesson = (fragment: DocumentFragment): Lesson => {
 
 export const getUnitKey = (unit: { id: string | null; short: string }) => (unit.id ?? `@${unit.short}`);
 
-export const getTimetableHash = (htmls: string[]) =>
+export const getTimetableHash = (htmls: string[]): string =>
     createHash('sha512').update(JSON.stringify(htmls.sort())).digest('hex');
+
+export const filterUnitsByType = <T>(units: ({ type: UnitType } & T)[], type: UnitType): T[] =>
+    units.filter((unit) => unit.type === type)
