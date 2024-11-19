@@ -1,14 +1,14 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { Axios } from 'axios';
 import { Timetable } from './timetable.js';
-import type { TimetableInterclassGroup, TimetableVersionData } from '@timetable-api/common';
-import { getUnitKey, parseTeacherFullName } from './utils.js';
+import { isDefined, type TimetableInterclassGroup, type TimetableVersionData } from '@timetable-api/common';
+import { filterUnitsByType, getTimetableHash, getUnitKey, parseTeacherFullName } from './utils.js';
 import { Table } from './table.js';
-import { Day, Lesson, TimeSlot } from './types.js';
+import { Day, Lesson, TimeSlot, Unit, UnitType } from './types.js';
 
 interface ClientUnit {
     id: string;
-    type: 'o' | 'n' | 's';
+    type: UnitType;
     short: string | null;
     name: string | null;
     fullName: string | null;
@@ -44,13 +44,13 @@ interface CommonGroup {
 
 export interface ParseResult {
     data: TimetableVersionData;
-    htmls: string[];
     validFrom: string | null;
     generationDate: string;
 }
 
 export class OptivumScrapper {
     private readonly timetable: Timetable;
+    private units: ClientUnit[];
     private classes: Map<string, ClientUnit>;
     private teachers: Map<string, ClientUnit>;
     private rooms: Map<string, ClientUnit>;
@@ -63,6 +63,7 @@ export class OptivumScrapper {
 
     constructor(url: string, axiosInstance: Axios) {
         this.timetable = new Timetable(url, axiosInstance);
+        this.units = [];
         this.classes = new Map();
         this.teachers = new Map();
         this.rooms = new Map();
@@ -74,14 +75,39 @@ export class OptivumScrapper {
         this.commonGroups = new Map();
     }
 
-    public async parse(): Promise<ParseResult> {
-        await this.loadUnitsFromList();
-        const units = [...[...this.classes.values()], ...[...this.teachers.values()], ...[...this.rooms.values()]];
-        if (units.length === 0) throw new Error('No units found');
-        const htmls: string[] = [];
+    public async getUnitList() {
+        const { units: list, sources } = await this.timetable.getUnitList();
+        return { list, sources };
+    }
+
+    private async getUnitTables(list: Unit[]) {
+        this.units = (await Promise.all(
+            list.map(async (unit) => {
+                try {
+                    return Object.assign(unit, {
+                        short: unit.type === 'n' ? parseTeacherFullName(unit.fullName)?.short ?? null : null,
+                        name: unit.type === 'n' ? parseTeacherFullName(unit.fullName)?.name ?? null : null,
+                        table: await this.timetable.getTable(unit.type, unit.id),
+                    });
+                } catch {
+                    return;
+                }}
+            ),
+        )).filter(isDefined);
+        this.classes = new Map(filterUnitsByType(this.units, 'o').map((unit) => [unit.id, unit]));
+        this.teachers = new Map(filterUnitsByType(this.units, 'n').map((unit) => [unit.id, unit]));
+        this.rooms = new Map(filterUnitsByType(this.units, 's').map((unit) => [unit.id, unit]));
+    }
+
+    public async preParse(unitList: Unit[]) {
+        await this.getUnitTables(unitList);
+        if (!this.units.length) throw new Error('No units found');
+    }
+
+    public parse() {
         let generationDate: string | null = null;
         let validFrom: string | null = null;
-        units.forEach((unit) => {
+        this.units.forEach((unit) => {
             if (unit.table === null) return;
             if (generationDate === null) {
                 generationDate = unit.table.getGenerationDate();
@@ -91,16 +117,24 @@ export class OptivumScrapper {
             if (unit.table.getRowsLength() > this.timeSlots.length) {
                 this.timeSlots = unit.table.getTimeSlots();
             }
-            htmls.push(unit.table.getHtml());
         });
         this.lessons = this.days.map(() => this.timeSlots.map(() => []));
-        units.forEach((unit) => {
+        this.units.forEach((unit) => {
             if (unit.table === null) return;
             unit.table.getLessons().forEach(({ lesson, dayIndex, timeSlotIndex }) => {
                 this.handleLesson(unit, lesson, timeSlotIndex, dayIndex);
             });
         });
-        return this.formatData(htmls, generationDate!, validFrom);
+        return this.formatData(generationDate!, validFrom);
+    }
+
+    public getHash() {
+        const htmls: string[] = [];
+        this.units.forEach((unit) => {
+            if (unit.table === null) return;
+            htmls.push(unit.table.getHtml());
+        });
+        return getTimetableHash(htmls);
     }
 
     private handleLesson(unit: ClientUnit, lesson: Lesson, timeSlotIndex: number, dayIndex: number) {
@@ -252,23 +286,7 @@ export class OptivumScrapper {
         return { teacherKey, roomKey, classKeys, commonGroupKeys };
     }
 
-    private async loadUnitsFromList() {
-        const list = await this.timetable.getUnitList();
-        const units = await Promise.all(
-            list.map(async (unit) =>
-                Object.assign(unit, {
-                    short: unit.type === 'n' ? parseTeacherFullName(unit.fullName)?.short ?? null : null,
-                    name: unit.type === 'n' ? parseTeacherFullName(unit.fullName)?.name ?? null : null,
-                    table: await this.timetable.getTable(unit.type, unit.id),
-                }),
-            ),
-        );
-        this.classes = new Map(units.filter((unit) => unit.type === 'o').map((unit) => [unit.id, unit]));
-        this.teachers = new Map(units.filter((unit) => unit.type === 'n').map((unit) => [unit.id, unit]));
-        this.rooms = new Map(units.filter((unit) => unit.type === 's').map((unit) => [unit.id, unit]));
-    }
-
-    private formatData(htmls: string[], generationDate: string, validFrom: string | null) {
+    private formatData(generationDate: string, validFrom: string | null): ParseResult {
         return {
             data: {
                 common: {
@@ -346,7 +364,6 @@ export class OptivumScrapper {
                     ),
                 ).flat().flat(),
             },
-            htmls,
             generationDate,
             validFrom
         };
