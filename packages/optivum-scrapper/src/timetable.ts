@@ -71,7 +71,7 @@ export class Timetable {
                     list.sources.push(responseUrl);
                 }),
             );
-            list.sources = list.sources.sort();
+            list.sources.sort();
             return list;
         }
         const frame = document.querySelector('frame[name="list"][src]');
