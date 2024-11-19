@@ -12,7 +12,7 @@ export class ParalelLimit {
         // TODO: Optimize by using a FIFO queue
         const newJobs = this.queue.splice(0, this.limit - this.runningJobs);
         this.runningJobs += newJobs.length;
-        newJobs.forEach((job) => { job().catch((error: unknown) => { console.error(error) }) });
+        newJobs.forEach((job) => { job().catch(console.error) });
     }
 
     /// Queues a job for execution.
@@ -26,7 +26,6 @@ export class ParalelLimit {
                     const result = await job();
                     resolve(result);
                 } catch (error) {
-                    // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
                     reject(error);
                 }
                 --this.runningJobs;
