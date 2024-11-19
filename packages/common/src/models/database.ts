@@ -25,6 +25,12 @@ export interface OptivumTimetableVersionsTable {
     hash: string;
 }
 
+export interface OptivumCandidateTable {
+    id: number;
+    school_rspo_ids: number[];
+    url: string;
+}
+
 export interface TimetableUrlsTable {
     id: number;
     school_rspo_id: number;
