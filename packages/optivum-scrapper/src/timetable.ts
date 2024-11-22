@@ -29,7 +29,7 @@ export class Timetable {
         });
         return {
             response: response.data as string,
-            responseUrl: response.config.url ?? url,
+            responseUrl: response.request.res.responseUrl ?? url,
         };
     }
 
