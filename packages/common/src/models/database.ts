@@ -30,6 +30,7 @@ export interface OptivumCandidateTable {
     school_rspo_ids: number[];
     sources: string[];
     unit_list: string;
+    added_at: Date;
 }
 
 export interface TimetableUrlsTable {

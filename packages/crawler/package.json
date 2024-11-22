@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@timetable-api/common": "workspace:*",
-    "axios": "^1.7.7",
+    "@timetable-api/optivum-scrapper": "workspace:*",
     "axios-retry": "^4.5.0",
     "cheerio": "^1.0.0",
     "dotenv": "^16.4.5",

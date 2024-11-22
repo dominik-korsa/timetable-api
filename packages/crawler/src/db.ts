@@ -1,6 +1,6 @@
 import knex from 'knex';
 import { config } from 'dotenv';
-import { EdupageInstancesTable } from '@timetable-api/common';
+import { EdupageInstancesTable, OptivumCandidateTable } from '@timetable-api/common';
 
 config();
 
@@ -25,4 +25,23 @@ export function pushEdupageInstances(rspoId: number, instances: string[]) {
         .insert(instances.map((instanceName) => ({ school_rspo_id: rspoId, instance_name: instanceName })))
         .onConflict()
         .ignore();
+}
+
+export function pushOptivumCandidate(rspoId: number, sources: string[], unitListJSON: string) {
+    return client<OptivumCandidateTable>('optivum_candidates')
+        .insert({
+            school_rspo_ids: [rspoId],
+            sources,
+            unit_list: unitListJSON,
+        })
+        .onConflict('sources')
+        .merge({
+            school_rspo_ids: client.raw(
+                `(
+                    SELECT array_agg(DISTINCT elem)
+                    FROM unnest(array_cat(optivum_candidates.school_rspo_ids, ?)) AS elem
+                )`,
+                [[rspoId]],
+            ),
+        });
 }

@@ -4,7 +4,7 @@ import { AxiosCacheInstance } from 'axios-cache-interceptor';
 import { JSDOM } from 'jsdom';
 import { Table } from './table.js';
 import { Unit, UnitType } from './types.js';
-import { parseUnitLink, parseUnitUrl } from './utils.js';
+import { parseUnitLink } from './utils.js';
 import { isDefined } from '@timetable-api/common';
 
 export class Timetable {
@@ -53,7 +53,8 @@ export class Timetable {
     }
 
     public async getUnitList(): Promise<{ units: Unit[]; sources: string[] }> {
-        const { response } = await this.getDocument(this.baseUrl);
+        const { response, responseUrl } = await this.getDocument(this.baseUrl);
+        this.baseUrl = responseUrl;
         let document = new JSDOM(response).window.document;
         if (document.querySelector('script[src="../scripts/powrot.js"]') !== null) {
             const [response, responseUrl] = await this.getIndexPageFromScript();

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import axiosRetry from 'axios-retry';
 import * as cheerio from 'cheerio';
-import { isOptivumCandidate } from './optivum.js';
+import { checkOptivumCandidate, isOptivumCandidate } from './optivum.js';
 import { getEdupageInstance } from './edupage.js';
 import { areUrlsEqualIgnoringQuery } from './utils.js';
 import { pushEdupageInstances } from './db.js';
@@ -30,7 +30,7 @@ export default async function crawlWebsite(rspoId: number, url: string) {
 
         if (result.optivum === true) {
             console.log(`\x1b[42m[RSPO: ${rspoId.toString()}] Found an optivum candidate at ${pageUrl}\x1b[0m`);
-            // TODO: Handle optivum candidate
+            await checkOptivumCandidate(pageUrl, rspoId)
             continue;
         }
         if (result.edupage !== undefined) edupage.add(result.edupage);
