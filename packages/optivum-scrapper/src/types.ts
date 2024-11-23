@@ -1,6 +1,8 @@
+export type UnitType = 'o' | 'n' | 's';
+
 export interface Unit {
     id: string;
-    type: 'o' | 'n' | 's';
+    type: UnitType;
     fullName: string;
 }
 
