@@ -16,8 +16,9 @@ async function main() {
                 .then(({ checked }) => {
                     console.log(`[RSPO: ${rspo_id.toString()}] Done! Checked ${checked.toString()} pages.`); //TODO: Progress bar
                 })
-                .catch((error: unknown) => {
-                    console.warn(`Error, school id: ${rspo_id.toString()}`, error);
+                // eslint-disable-next-line @typescript-eslint/use-unknown-in-catch-callback-variable
+                .catch((error: Error) => {
+                    console.warn(`\x1b[33m[RSPO: ${rspo_id.toString()}] Error message: ${error.message}\x1b[0m`);
                 }),
         new ParalelLimit(PARALEL_WEBSITE_LIMIT),
     );

@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { Axios, AxiosError } from 'axios';
 import axiosRetry from 'axios-retry';
 import * as cheerio from 'cheerio';
 import { checkOptivumCandidate, isOptivumCandidate } from './optivum.js';
@@ -16,7 +16,7 @@ export default async function crawlWebsite(rspoId: number, url: string) {
     const edupage = new Set<string>();
     do {
         if (checked.size >= 50) {
-            console.warn(`\x1b[35m[RSPO: ${rspoId.toString()}] Something went wrong! Checked size is >= 60.\x1b[0m`);
+            console.warn(`\x1b[33m[RSPO: ${rspoId.toString()}] Something went wrong! Checked size is >= 60.\x1b[0m`);
             break;
         }
         const [pageUrl, depthLimit] = toCheck[0];
@@ -42,7 +42,7 @@ export default async function crawlWebsite(rspoId: number, url: string) {
         });
     } while (toCheck.length > 0);
     [...edupage].forEach((e) => {
-        console.log(`\x1b[43m[RSPO: ${rspoId.toString()}] Found an edupage instance (${e})\x1b[0m`);
+        console.log(`\x1b[44m[RSPO: ${rspoId.toString()}] Found an edupage instance (${e})\x1b[0m`);
     });
     if (edupage.size) await pushEdupageInstances(rspoId, [...edupage]);
     return { checked: checked.size };
@@ -57,8 +57,9 @@ function checkPage(url: string, checkForPages: boolean) {
             const edupage = getEdupageInstance(html);
             return { responseUrl: responseUrl ?? url, edupage, links: checkForPages ? findLinks(document) : [] };
         })
-        .catch(() => {
-            console.warn(`\x1b[35mError at ${url}\x1b[0m`);
+        // eslint-disable-next-line @typescript-eslint/use-unknown-in-catch-callback-variable
+        .catch((err: Error | AxiosError) => {
+            console.warn(`\x1b[33mError ${axios.isAxiosError(err) ? err.response?.status.toString() ?? 'undefined' : err.message} at ${url}\x1b[0m`);
             return;
         });
 }
