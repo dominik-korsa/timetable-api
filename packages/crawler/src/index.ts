@@ -1,6 +1,6 @@
 import crawlWebsite from './crawler.js';
 import { getSchoolWebsites } from './db.js';
-import { asyncForEachWithLimit, ParalelLimit } from './paralel-limit.js';
+import { asyncForEachWithLimit, ParalelLimit } from '@timetable-api/common';
 
 const PARALEL_WEBSITE_LIMIT = 30;
 
