@@ -37,6 +37,7 @@ export function pushOptivumCandidate(rspoId: number, sources: string[], unitList
         .onConflict('sources')
         .merge({
             school_rspo_ids: client.raw(
+                // It adds rspoId to school_rspo_ids, deletes dublications
                 `(
                     SELECT array_agg(DISTINCT elem)
                     FROM unnest(array_cat(optivum_candidates.school_rspo_ids, ?)) AS elem
