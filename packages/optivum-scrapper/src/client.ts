@@ -12,7 +12,6 @@ interface ClientUnit {
     short: string | null;
     name: string | null;
     fullName: string | null;
-    table: Table | null;
 }
 
 type ClientLesson =
@@ -115,9 +114,9 @@ export class OptivumScrapper {
             short: unit.type === 'n' ? parseTeacherFullName(unit.fullName)?.short ?? null : null,
             name: unit.type === 'n' ? parseTeacherFullName(unit.fullName)?.name ?? null : null
         }));
-        this.classes = new Map(filterUnitsByType(unitsWithTables, 'o').map((unit) => [unit.id, unit]));
-        this.teachers = new Map(filterUnitsByType(unitsWithTables, 'n').map((unit) => [unit.id, unit]));
-        this.rooms = new Map(filterUnitsByType(unitsWithTables, 's').map((unit) => [unit.id, unit]));
+        this.classes = new Map(filterUnitsByType(unitsWithTables, 'o').map((unit) => [unit.id, { id: unit.id, type: unit.type, name: unit.name, short: unit.short, fullName: unit.fullName }]));
+        this.teachers = new Map(filterUnitsByType(unitsWithTables, 'n').map((unit) => [unit.id, { id: unit.id, type: unit.type, name: unit.name, short: unit.short, fullName: unit.fullName }]));
+        this.rooms = new Map(filterUnitsByType(unitsWithTables, 's').map((unit) => [unit.id, { id: unit.id, type: unit.type, name: unit.name, short: unit.short, fullName: unit.fullName }]));
 
         let generationDate: string | null = null;
         let validFrom: string | null = null;
@@ -226,7 +225,6 @@ export class OptivumScrapper {
                 name: null,
                 short: lesson.teacher!.short,
                 fullName: null,
-                table: null,
                 type: 'n',
             });
         }
@@ -241,7 +239,6 @@ export class OptivumScrapper {
                     name: null,
                     short: lesson.room!.short,
                     fullName: null,
-                    table: null,
                     type: 's',
                 });
             }
@@ -266,7 +263,6 @@ export class OptivumScrapper {
                         short: class_.short,
                         name: null,
                         fullName: null,
-                        table: null,
                         type: 'o',
                     });
                 }
