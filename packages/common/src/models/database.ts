@@ -18,7 +18,7 @@ export interface SchoolsTable {
 
 export interface OptivumTimetableVersionsTable {
     unique_id: number;
-    school_rspo_id: number;
+    school_rspo_ids: number[];
     generated_on: string;
     timetable_data: string;
     discriminant: number;
