@@ -64,7 +64,7 @@ export default async function crawlWebsite(rspoId: number, startUrl: string) {
             });
         });
     }
-    for (const instance in edupage.values()) {
+    for (const instance of edupage.values()) {
         console.log(`\x1b[44m[RSPO: ${rspoId.toString()}] Found an edupage instance (${instance})\x1b[0m`);
     }
     if (edupage.size) await pushEdupageInstances(rspoId, [...edupage]);
