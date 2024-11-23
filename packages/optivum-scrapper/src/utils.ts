@@ -155,5 +155,20 @@ export const getUnitKey = (unit: { id: string | null; short: string }) => (unit.
 export const getTimetableHash = (htmls: string[]): string =>
     createHash('sha512').update(JSON.stringify(htmls.sort())).digest('hex');
 
-export const filterUnitsByType = <T>(units: ({ type: UnitType } & T)[], type: UnitType): T[] =>
-    units.filter((unit) => unit.type === type)
+/* SOURCE: https://github.com/dominik-korsa/timetable/blob/main/src/utils.ts */
+export class DefaultsMap<K, V> extends Map<K, V> {
+    private readonly generateDefault: (key: K) => V;
+
+    constructor(defaultGenerator: (key: K) => V) {
+      super();
+      this.generateDefault = defaultGenerator;
+    }
+
+    override get(key: K): V {
+      let value = super.get(key);
+      if (value !== undefined) return value;
+      value = this.generateDefault(key);
+      this.set(key, value);
+      return value;
+    }
+  }
