@@ -179,9 +179,11 @@ export class OptivumScrapper {
     }
 
     private handleLesson(unit: ClientUnit, lesson: Lesson, timeSlotIndex: number, dayIndex: number) {
+        const timeSlotLessons = this.lessons.get(`${dayIndex.toString()}|${timeSlotIndex.toString()}`);
+
         // Lesson with comment
         if (lesson.comment !== null) {
-            this.lessons.get(`${dayIndex.toString()}|${timeSlotIndex.toString()}`).push({
+            timeSlotLessons.push({
                 subjectId: null,
                 classIds: [],
                 teacherId: null,
@@ -219,7 +221,7 @@ export class OptivumScrapper {
         }
 
         // Lesson
-        const existingLesson = this.lessons.get(`${dayIndex.toString()}|${timeSlotIndex.toString()}`).find(
+        const existingLesson = timeSlotLessons.find(
             (l) =>
                 l.interclassGroupId !== null &&
                 (l.interclassGroupId === lesson.interclassGroupId ||
@@ -235,7 +237,7 @@ export class OptivumScrapper {
                     })),
         );
         if (!existingLesson) {
-            this.lessons.get(`${dayIndex.toString()}|${timeSlotIndex.toString()}`).push({
+            timeSlotLessons.push({
                 classIds: classKeys,
                 teacherId: teacherKey,
                 roomId: roomKey,
