@@ -58,7 +58,7 @@ export class OptivumScrapper {
     private classes: Map<string, ClientUnit>;
     private teachers: Map<string, ClientUnit>;
     private rooms: Map<string, ClientUnit>;
-    private lessons: DefaultsMap<[number, number], ClientLesson[]>;
+    private readonly lessons: DefaultsMap<string, ClientLesson[]>;
     private timeSlots: TimeSlot[];
     private days: Day[];
     private readonly subjects: string[];
@@ -181,7 +181,7 @@ export class OptivumScrapper {
     private handleLesson(unit: ClientUnit, lesson: Lesson, timeSlotIndex: number, dayIndex: number) {
         // Lesson with comment
         if (lesson.comment !== null) {
-            this.lessons.get([dayIndex, timeSlotIndex]).push({
+            this.lessons.get(`${dayIndex.toString()}|${timeSlotIndex.toString()}`).push({
                 subjectId: null,
                 classIds: [],
                 teacherId: null,
@@ -219,7 +219,7 @@ export class OptivumScrapper {
         }
 
         // Lesson
-        const existingLesson = this.lessons.get([dayIndex, timeSlotIndex]).find(
+        const existingLesson = this.lessons.get(`${dayIndex.toString()}|${timeSlotIndex.toString()}`).find(
             (l) =>
                 l.interclassGroupId !== null &&
                 (l.interclassGroupId === lesson.interclassGroupId ||
@@ -235,7 +235,7 @@ export class OptivumScrapper {
                     })),
         );
         if (!existingLesson) {
-            this.lessons.get([dayIndex, timeSlotIndex]).push({
+            this.lessons.get(`${dayIndex.toString()}|${timeSlotIndex.toString()}`).push({
                 classIds: classKeys,
                 teacherId: teacherKey,
                 roomId: roomKey,
