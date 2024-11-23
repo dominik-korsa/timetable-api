@@ -1,67 +1,105 @@
-import axios, { Axios, AxiosError } from 'axios';
+import axios from 'axios';
 import axiosRetry from 'axios-retry';
 import * as cheerio from 'cheerio';
 import { checkOptivumCandidate, isOptivumCandidate } from './optivum.js';
 import { getEdupageInstance } from './edupage.js';
 import { areUrlsEqualIgnoringQuery } from './utils.js';
 import { pushEdupageInstances } from './db.js';
+import { ClientRequest } from 'node:http';
 
 const axiosInstance = axios.create();
 axiosRetry(axiosInstance, { retries: 3, retryDelay: (retryCount) => retryCount * 3000 });
 
-export default async function crawlWebsite(rspoId: number, url: string) {
+interface QueueItem {
+    pageUrl: string;
+    remainingDepth: number;
+}
+
+type CheckPageResult = {
+    responseUrl: string;
+    isOptivum: true,
+} | {
+    responseUrl: string;
+    isOptivum: false,
+    edupageInstance: string | null;
+    links: string[];
+};
+
+export default async function crawlWebsite(rspoId: number, startUrl: string) {
     const checked = new Set<string>();
-    /* toCheck = [page url, depth limit][] */
-    const toCheck: [string, number][] = [[url, 3]];
+    const checkQueue: QueueItem[] = [{ pageUrl: startUrl, remainingDepth: 3 }];
     const edupage = new Set<string>();
-    do {
+    while (checkQueue.length > 0) {
         if (checked.size >= 50) {
             console.warn(`\x1b[33m[RSPO: ${rspoId.toString()}] Something went wrong! Checked size is >= 60.\x1b[0m`);
             break;
         }
-        const [pageUrl, depthLimit] = toCheck[0];
-        toCheck.splice(0, 1);
+
+        // Queue is not empty - checked in while condition
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const { pageUrl, remainingDepth } = checkQueue.shift()!;
+
         if (checked.has(pageUrl)) continue;
 
-        const result = await checkPage(pageUrl, depthLimit > 1);
+        const result = await checkPage(pageUrl, remainingDepth > 1);
         checked.add(pageUrl);
-        if (result === undefined) continue;
+        if (result === null) continue;
         if (pageUrl !== result.responseUrl) checked.add(result.responseUrl);
 
-        if (result.optivum === true) {
+        if (result.isOptivum) {
             console.log(`\x1b[42m[RSPO: ${rspoId.toString()}] Found an optivum candidate at ${pageUrl}\x1b[0m`);
             await checkOptivumCandidate(pageUrl, rspoId)
             continue;
         }
-        if (result.edupage !== undefined) edupage.add(result.edupage);
+        if (result.edupageInstance !== null) edupage.add(result.edupageInstance);
 
-        result.links?.forEach((link) => {
+        result.links.forEach((link) => {
             const newUrl = new URL(link, pageUrl);
             if (areUrlsEqualIgnoringQuery(newUrl.toString(), pageUrl)) return;
-            toCheck.push([newUrl.toString(), depthLimit - 1]);
+            checkQueue.push({
+                pageUrl: newUrl.toString(),
+                remainingDepth: remainingDepth - 1,
+            });
         });
-    } while (toCheck.length > 0);
-    [...edupage].forEach((e) => {
-        console.log(`\x1b[44m[RSPO: ${rspoId.toString()}] Found an edupage instance (${e})\x1b[0m`);
-    });
+    }
+    for (const instance in edupage.values()) {
+        console.log(`\x1b[44m[RSPO: ${rspoId.toString()}] Found an edupage instance (${instance})\x1b[0m`);
+    }
     if (edupage.size) await pushEdupageInstances(rspoId, [...edupage]);
     return { checked: checked.size };
 }
 
-function checkPage(url: string, checkForPages: boolean) {
-    return axiosInstance
-        .get<string>(url)
-        .then(({ data: html, request: { res: { responseUrl } } }) => {
-            const document = cheerio.load(html);
-            if (isOptivumCandidate(document)) return { responseUrl: responseUrl as string | undefined ?? url, optivum: true };
-            const edupage = getEdupageInstance(html);
-            return { responseUrl: responseUrl as string | undefined ?? url, edupage, links: checkForPages ? findLinks(document) : [] };
-        })
-        // eslint-disable-next-line @typescript-eslint/use-unknown-in-catch-callback-variable
-        .catch((err: Error | AxiosError) => {
-            console.warn(`\x1b[33mError ${axios.isAxiosError(err) ? err.response?.status.toString() ?? 'undefined' : err.message} at ${url}\x1b[0m`);
-            return;
-        });
+async function checkPage(url: string, checkForPages: boolean): Promise<CheckPageResult | null> {
+    try {
+        const response = await axiosInstance.get<string>(url);
+        const html = response.data;
+        // https://axios-http.com/docs/res_schema
+        const request = response.request as (ClientRequest | XMLHttpRequest);
+        let responseUrl = url;
+        if ('req' in request && request.req.url !== undefined) responseUrl = request.req.url;
+
+        const document = cheerio.load(html);
+
+        if (isOptivumCandidate(document)) return {
+            responseUrl,
+            isOptivum: true,
+        };
+
+        const edupageInstance = getEdupageInstance(html);
+        return {
+            responseUrl,
+            isOptivum: false,
+            edupageInstance,
+            links: checkForPages ? findLinks(document) : []
+        };
+    } catch (err) {
+        let errorMessage: string;
+        if (axios.isAxiosError(err) && err.response !== undefined) errorMessage = err.response.status.toString();
+        else if (err instanceof Error) errorMessage = err.message;
+        else errorMessage = 'undefined';
+        console.warn(`\x1b[33mError ${errorMessage} at ${url}\x1b[0m`);
+        return null;
+    }
 }
 
 const KEYWORDS = ['plan', 'harmonogram', 'podzial', 'podział', 'rozkład', 'rozklad', 'timetable', 'lekcj', 'schedule'];
