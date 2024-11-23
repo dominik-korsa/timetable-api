@@ -29,7 +29,8 @@ export class Timetable {
         });
         return {
             response: response.data as string,
-            responseUrl: response.request.res.responseUrl ?? url,
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            responseUrl: response.request.res.responseUrl as string | null ?? url,
         };
     }
 

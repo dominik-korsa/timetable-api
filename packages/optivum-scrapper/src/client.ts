@@ -226,10 +226,10 @@ export class OptivumScrapper {
                     (unit.type === 'n' && l.teacherId === unit.id) ||
                     (unit.type === 's' && l.roomId === unit.id) ||
                     lesson.classes.find((class_) => {
-                        const classKey = getUnitKey(class_ as { id: string | null; short: string })!;
+                        const classKey = getUnitKey(class_ as { id: string | null; short: string });
                         if (class_.groupShort !== null)
                             return l.groupIds.find(
-                                (groupId) => groupId === `${classKey};${lesson.subjectId};${groupId}`,
+                                (groupId) => groupId === `${classKey};${lesson.subjectId!};${groupId}`,
                             );
                         else return l.classIds.includes(classKey);
                     })),
@@ -311,7 +311,7 @@ export class OptivumScrapper {
                 }
             }
             const commonGroupKey =
-                class_.groupShort !== null ? `${class_.id};${lesson.subjectId!};${class_.groupShort}` : null;
+                class_.groupShort !== null && classKey !== null ? `${classKey};${lesson.subjectId!};${class_.groupShort}` : null;
             if (commonGroupKey !== null) commonGroupKeys.push(commonGroupKey);
             if (commonGroupKey !== null && !this.commonGroups.has(commonGroupKey))
                 this.commonGroups.set(commonGroupKey, {
