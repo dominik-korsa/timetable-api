@@ -326,7 +326,8 @@ export class OptivumScrapper {
 
     private formatData(generationDate: string, validFrom: string | null): ParseResult {
         const lessons: TimetableLesson[] = [];
-        this.lessons.forEach((cell, [dayIndex, timeSlotIndex]) => {
+        this.lessons.forEach((cell, index) => {
+            const [dayIndex, timeSlotIndex] = index.split('|')
             cell.forEach((lesson) => {
                 lessons.push({
                     timeSlotId: timeSlotIndex.toString(),
