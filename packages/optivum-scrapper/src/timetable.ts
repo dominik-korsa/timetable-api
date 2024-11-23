@@ -16,7 +16,7 @@ export class Timetable {
         this.axios = axios;
     }
 
-    private async getDocument(path: string): Promise<{
+    public async getDocument(path: string): Promise<{
         response: string;
         responseUrl: string;
     }> {
@@ -33,8 +33,8 @@ export class Timetable {
         };
     }
 
-    public async getTable(symbol: string, id: string): Promise<Table> {
-        const { response } = await this.getDocument(`plany/${symbol}${id}.html`);
+    public async getTable(type: UnitType, id: string): Promise<Table> {
+        const { response } = await this.getDocument(`plany/${type}${id}.html`);
         return new Table(response);
     }
 

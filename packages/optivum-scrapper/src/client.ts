@@ -50,7 +50,7 @@ export interface ParseResult {
 
 export class OptivumScrapper {
     private readonly timetable: Timetable;
-    private units: ClientUnit[];
+    private unitList: { id: string; fullName: string; type: UnitType; html: string }[];
     private classes: Map<string, ClientUnit>;
     private teachers: Map<string, ClientUnit>;
     private rooms: Map<string, ClientUnit>;
@@ -63,7 +63,7 @@ export class OptivumScrapper {
 
     constructor(url: string, axiosInstance: Axios) {
         this.timetable = new Timetable(url, axiosInstance);
-        this.units = [];
+        this.unitList = [];
         this.classes = new Map();
         this.teachers = new Map();
         this.rooms = new Map();
@@ -80,61 +80,65 @@ export class OptivumScrapper {
         return { list, sources };
     }
 
-    private async getUnitTables(list: Unit[]) {
-        this.units = (await Promise.all(
-            list.map(async (unit) => {
-                try {
-                    return Object.assign(unit, {
-                        short: unit.type === 'n' ? parseTeacherFullName(unit.fullName)?.short ?? null : null,
-                        name: unit.type === 'n' ? parseTeacherFullName(unit.fullName)?.name ?? null : null,
-                        table: await this.timetable.getTable(unit.type, unit.id),
-                    });
-                } catch {
-                    return;
-                }}
-            ),
-        )).filter(isDefined);
-        this.classes = new Map(filterUnitsByType(this.units, 'o').map((unit) => [unit.id, unit]));
-        this.teachers = new Map(filterUnitsByType(this.units, 'n').map((unit) => [unit.id, unit]));
-        this.rooms = new Map(filterUnitsByType(this.units, 's').map((unit) => [unit.id, unit]));
+    private async getUnitHTMLs(list: Unit[]) {
+        this.unitList = (
+            await Promise.all(
+                list.map(async (unit) => {
+                    try {
+                        return Object.assign(unit, {
+                            html: (await this.timetable.getDocument(`plany/${unit.type}${unit.id}.html`)).response,
+                        });
+                    } catch {
+                        return;
+                    }
+                }),
+            )
+        ).filter(isDefined);
     }
 
     public async preParse(unitList: Unit[]) {
-        await this.getUnitTables(unitList);
-        if (!this.units.length) throw new Error('No units found');
+        await this.getUnitHTMLs(unitList);
+        if (!this.unitList.length) throw new Error('No units found');
+    }
+
+    public getHash() {
+        const htmls: string[] = this.unitList.map(({ html }) => html);
+        return getTimetableHash(htmls);
     }
 
     public parse() {
+        const unitsWithTables = this.unitList.map((unit) => ({
+            id: unit.id,
+            type: unit.type,
+            fullName: unit.fullName,
+            table: new Table(unit.html),
+            short: unit.type === 'n' ? parseTeacherFullName(unit.fullName)?.short ?? null : null,
+            name: unit.type === 'n' ? parseTeacherFullName(unit.fullName)?.name ?? null : null
+        }));
+        this.classes = new Map(filterUnitsByType(unitsWithTables, 'o').map((unit) => [unit.id, unit]));
+        this.teachers = new Map(filterUnitsByType(unitsWithTables, 'n').map((unit) => [unit.id, unit]));
+        this.rooms = new Map(filterUnitsByType(unitsWithTables, 's').map((unit) => [unit.id, unit]));
+
         let generationDate: string | null = null;
         let validFrom: string | null = null;
-        this.units.forEach((unit) => {
-            if (unit.table === null) return;
+        unitsWithTables.forEach(({ table }) => {
             if (generationDate === null) {
-                generationDate = unit.table.getGenerationDate();
-                validFrom = unit.table.getValidationDate() ?? null;
+                generationDate = table.getGenerationDate();
+                validFrom = table.getValidationDate() ?? null;
             }
-            if (this.days.length === 0) this.days = unit.table.getDays();
-            if (unit.table.getRowsLength() > this.timeSlots.length) {
-                this.timeSlots = unit.table.getTimeSlots();
+            if (this.days.length === 0) this.days = table.getDays();
+            if (table.getRowsLength() > this.timeSlots.length) {
+                this.timeSlots = table.getTimeSlots();
             }
         });
+
         this.lessons = this.days.map(() => this.timeSlots.map(() => []));
-        this.units.forEach((unit) => {
-            if (unit.table === null) return;
+        unitsWithTables.forEach((unit) => {
             unit.table.getLessons().forEach(({ lesson, dayIndex, timeSlotIndex }) => {
                 this.handleLesson(unit, lesson, timeSlotIndex, dayIndex);
             });
         });
         return this.formatData(generationDate!, validFrom);
-    }
-
-    public getHash() {
-        const htmls: string[] = [];
-        this.units.forEach((unit) => {
-            if (unit.table === null) return;
-            htmls.push(unit.table.getHtml());
-        });
-        return getTimetableHash(htmls);
     }
 
     private handleLesson(unit: ClientUnit, lesson: Lesson, timeSlotIndex: number, dayIndex: number) {
