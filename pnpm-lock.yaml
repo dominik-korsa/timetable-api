@@ -89,9 +89,15 @@ importers:
       '@timetable-api/common':
         specifier: workspace:*
         version: link:../common
+      dotenv:
+        specifier: ^16.4.5
+        version: 16.4.5
       jsdom:
         specifier: ^22.1.0
         version: 22.1.0
+      knex:
+        specifier: ^3.1.0
+        version: 3.1.0(pg@8.11.5)
     devDependencies:
       '@types/jsdom':
         specifier: ^21.1.1
