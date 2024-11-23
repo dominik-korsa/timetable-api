@@ -114,7 +114,7 @@ function findLinks($: cheerio.CheerioAPI) {
         .forEach((link) => {
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             const href = $(link).attr('href')!;
-            if (href.startsWith('javascript:')) return;
+            if (href.toLowerCase().startsWith('javascript:') || href.toLowerCase().startsWith('mailto:')) return;
             if (
                 KEYWORDS.some(
                     (keyword) =>
@@ -149,6 +149,6 @@ function findLinks($: cheerio.CheerioAPI) {
 
     return [...links].filter((link) => {
         const linkLower = link.toLowerCase();
-        return !DISALLOWED_EXTENSIONS.some((ext) => linkLower.endsWith(ext)) && !linkLower.startsWith('mailto:');
+        return !DISALLOWED_EXTENSIONS.some((ext) => linkLower.endsWith(ext));
     });
 }
