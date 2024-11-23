@@ -114,6 +114,7 @@ function findLinks($: cheerio.CheerioAPI) {
         .forEach((link) => {
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             const href = $(link).attr('href')!;
+            if (href.startsWith('javascript:')) return;
             if (
                 KEYWORDS.some(
                     (keyword) =>
