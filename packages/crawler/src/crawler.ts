@@ -25,13 +25,15 @@ type CheckPageResult = {
     links: string[];
 };
 
+const PAGE_COUNT_LIMIT = 50;
+
 export default async function crawlWebsite(rspoId: number, startUrl: string) {
     const checked = new Set<string>();
     const checkQueue: QueueItem[] = [{ pageUrl: startUrl, remainingDepth: 3 }];
     const edupage = new Set<string>();
     while (checkQueue.length > 0) {
-        if (checked.size >= 50) {
-            console.warn(`\x1b[33m[RSPO: ${rspoId.toString()}] Something went wrong! Checked size is >= 60.\x1b[0m`);
+        if (checked.size >= PAGE_COUNT_LIMIT) {
+            console.warn(`\x1b[33m[RSPO: ${rspoId.toString()}] Reached checked page limit (${PAGE_COUNT_LIMIT.toString()}).\x1b[0m`);
             break;
         }
 
