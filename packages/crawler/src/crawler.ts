@@ -51,11 +51,11 @@ export default async function crawlWebsite(rspoId: number, url: string) {
 function checkPage(url: string, checkForPages: boolean) {
     return axiosInstance
         .get<string>(url)
-        .then(({ data: html, config: { url: responseUrl } }) => {
+        .then(({ data: html, request: { res: { responseUrl } } }) => {
             const document = cheerio.load(html);
-            if (isOptivumCandidate(document)) return { responseUrl: responseUrl ?? url, optivum: true };
+            if (isOptivumCandidate(document)) return { responseUrl: responseUrl as string | undefined ?? url, optivum: true };
             const edupage = getEdupageInstance(html);
-            return { responseUrl: responseUrl ?? url, edupage, links: checkForPages ? findLinks(document) : [] };
+            return { responseUrl: responseUrl as string | undefined ?? url, edupage, links: checkForPages ? findLinks(document) : [] };
         })
         // eslint-disable-next-line @typescript-eslint/use-unknown-in-catch-callback-variable
         .catch((err: Error | AxiosError) => {
