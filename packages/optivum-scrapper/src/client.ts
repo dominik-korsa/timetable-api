@@ -1,8 +1,13 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { Axios } from 'axios';
 import { Timetable } from './timetable.js';
-import { isDefined, type TimetableInterclassGroup, type TimetableVersionData } from '@timetable-api/common';
-import { filterUnitsByType, getTimetableHash, getUnitKey, parseTeacherFullName } from './utils.js';
+import {
+    isDefined,
+    TimetableLesson,
+    type TimetableInterclassGroup,
+    type TimetableVersionData,
+} from '@timetable-api/common';
+import { DefaultsMap, getTimetableHash, getUnitKey, parseTeacherFullName } from './utils.js';
 import { Table } from './table.js';
 import { Day, Lesson, TimeSlot, Unit, UnitType } from './types.js';
 
@@ -53,7 +58,7 @@ export class OptivumScrapper {
     private classes: Map<string, ClientUnit>;
     private teachers: Map<string, ClientUnit>;
     private rooms: Map<string, ClientUnit>;
-    private lessons: ClientLesson[][][];
+    private lessons: DefaultsMap<[number, number], ClientLesson[]>;
     private timeSlots: TimeSlot[];
     private days: Day[];
     private readonly subjects: string[];
@@ -66,7 +71,7 @@ export class OptivumScrapper {
         this.classes = new Map();
         this.teachers = new Map();
         this.rooms = new Map();
-        this.lessons = [];
+        this.lessons = new DefaultsMap(() => []);
         this.timeSlots = [];
         this.days = [];
         this.subjects = [];
@@ -105,35 +110,68 @@ export class OptivumScrapper {
         return getTimetableHash(htmls);
     }
 
+    private filterUnitsByType(units: ClientUnit[]) {
+        const classes = new Map<string, ClientUnit>();
+        const teachers = new Map<string, ClientUnit>();
+        const rooms = new Map<string, ClientUnit>();
+        units.forEach((unit) => {
+            switch (unit.type) {
+                case 'o':
+                    classes.set(unit.id, {
+                        id: unit.id,
+                        type: unit.type,
+                        name: unit.name,
+                        short: unit.short,
+                        fullName: unit.fullName,
+                    });
+                    break;
+                case 'n':
+                    teachers.set(unit.id, {
+                        id: unit.id,
+                        type: unit.type,
+                        name: unit.name,
+                        short: unit.short,
+                        fullName: unit.fullName,
+                    });
+                    break;
+                case 's':
+                    rooms.set(unit.id, {
+                        id: unit.id,
+                        type: unit.type,
+                        name: unit.name,
+                        short: unit.short,
+                        fullName: unit.fullName,
+                    });
+                    break;
+                default:
+                    break;
+            }
+        });
+        return [classes, teachers, rooms];
+    }
+
     public parse() {
-        const unitsWithTables = this.unitList.map((unit) => ({
-            id: unit.id,
-            type: unit.type,
-            fullName: unit.fullName,
-            table: new Table(unit.html),
-            short: unit.type === 'n' ? parseTeacherFullName(unit.fullName)?.short ?? null : null,
-            name: unit.type === 'n' ? parseTeacherFullName(unit.fullName)?.name ?? null : null
-        }));
-        this.classes = new Map(filterUnitsByType(unitsWithTables, 'o').map((unit) => [unit.id, { id: unit.id, type: unit.type, name: unit.name, short: unit.short, fullName: unit.fullName }]));
-        this.teachers = new Map(filterUnitsByType(unitsWithTables, 'n').map((unit) => [unit.id, { id: unit.id, type: unit.type, name: unit.name, short: unit.short, fullName: unit.fullName }]));
-        this.rooms = new Map(filterUnitsByType(unitsWithTables, 's').map((unit) => [unit.id, { id: unit.id, type: unit.type, name: unit.name, short: unit.short, fullName: unit.fullName }]));
+        const units = this.unitList.map((unit) =>
+            Object.assign(unit, {
+                short: unit.type === 'n' ? parseTeacherFullName(unit.fullName)?.short ?? null : null,
+                name: unit.type === 'n' ? parseTeacherFullName(unit.fullName)?.name ?? null : null,
+            }),
+        );
+        [this.classes, this.teachers, this.rooms] = this.filterUnitsByType(units);
 
         let generationDate: string | null = null;
         let validFrom: string | null = null;
-        unitsWithTables.forEach(({ table }) => {
+        units.forEach((unit) => {
+            const table = new Table(unit.html);
             if (generationDate === null) {
                 generationDate = table.getGenerationDate();
                 validFrom = table.getValidationDate() ?? null;
+                this.days = table.getDays();
             }
-            if (this.days.length === 0) this.days = table.getDays();
             if (table.getRowsLength() > this.timeSlots.length) {
                 this.timeSlots = table.getTimeSlots();
             }
-        });
-
-        this.lessons = this.days.map(() => this.timeSlots.map(() => []));
-        unitsWithTables.forEach((unit) => {
-            unit.table.getLessons().forEach(({ lesson, dayIndex, timeSlotIndex }) => {
+            table.getLessons().forEach(({ lesson, dayIndex, timeSlotIndex }) => {
                 this.handleLesson(unit, lesson, timeSlotIndex, dayIndex);
             });
         });
@@ -143,7 +181,7 @@ export class OptivumScrapper {
     private handleLesson(unit: ClientUnit, lesson: Lesson, timeSlotIndex: number, dayIndex: number) {
         // Lesson with comment
         if (lesson.comment !== null) {
-            this.lessons[dayIndex][timeSlotIndex].push({
+            this.lessons.get([dayIndex, timeSlotIndex]).push({
                 subjectId: null,
                 classIds: [],
                 teacherId: null,
@@ -181,7 +219,7 @@ export class OptivumScrapper {
         }
 
         // Lesson
-        const existingLesson = this.lessons[dayIndex][timeSlotIndex].find(
+        const existingLesson = this.lessons.get([dayIndex, timeSlotIndex]).find(
             (l) =>
                 l.interclassGroupId !== null &&
                 (l.interclassGroupId === lesson.interclassGroupId ||
@@ -197,7 +235,7 @@ export class OptivumScrapper {
                     })),
         );
         if (!existingLesson) {
-            this.lessons[dayIndex][timeSlotIndex].push({
+            this.lessons.get([dayIndex, timeSlotIndex]).push({
                 classIds: classKeys,
                 teacherId: teacherKey,
                 roomId: roomKey,
@@ -208,9 +246,9 @@ export class OptivumScrapper {
             });
         } else {
             if (unit.type === 'o' && !existingLesson.classIds.includes(unit.id)) existingLesson.classIds.push(unit.id);
-            commonGroupKeys.forEach(commonGroupKey => {
+            commonGroupKeys.forEach((commonGroupKey) => {
                 if (!existingLesson.groupIds.includes(commonGroupKey)) existingLesson.groupIds.push(commonGroupKey);
-            })
+            });
             if (unit.type === 'n' && existingLesson.teacherId === null) existingLesson.teacherId = unit.id;
             if (unit.type === 's' && existingLesson.roomId === null) existingLesson.roomId = unit.id;
         }
@@ -287,6 +325,26 @@ export class OptivumScrapper {
     }
 
     private formatData(generationDate: string, validFrom: string | null): ParseResult {
+        const lessons: TimetableLesson[] = [];
+        this.lessons.forEach((cell, [dayIndex, timeSlotIndex]) => {
+            cell.forEach((lesson) => {
+                lessons.push({
+                    timeSlotId: timeSlotIndex.toString(),
+                    dayId: dayIndex.toString(),
+                    weekId: null,
+                    subjectId: lesson.subjectId,
+                    teacherIds: lesson.teacherId !== null ? [lesson.teacherId] : [],
+                    roomIds: lesson.roomId !== null ? [lesson.roomId] : [],
+                    groupIds: lesson.groupIds,
+                    classIds: lesson.classIds,
+                    periodId: null,
+                    seminarGroup: null,
+                    studentIds: [],
+                    interclassGroupId: lesson.interclassGroupId,
+                    comment: lesson.comment,
+                });
+            });
+        });
         return {
             data: {
                 common: {
@@ -342,30 +400,12 @@ export class OptivumScrapper {
                     buildings: [],
                     periods: [],
                     weeks: [],
-                    students: []
+                    students: [],
                 },
-                lessons: this.lessons.map((day, dayIndex) =>
-                    day.map((timeSlot, timeSlotIndex) =>
-                        timeSlot.map((lesson) => ({
-                            timeSlotId: timeSlotIndex.toString(),
-                            dayId: dayIndex.toString(),
-                            weekId: null,
-                            subjectId: lesson.subjectId,
-                            teacherIds: lesson.teacherId !== null ? [lesson.teacherId] : [],
-                            roomIds: lesson.roomId !== null ? [lesson.roomId] : [],
-                            groupIds: lesson.groupIds,
-                            classIds: lesson.classIds,
-                            periodId: null,
-                            seminarGroup: null,
-                            studentIds: [],
-                            interclassGroupId: lesson.interclassGroupId,
-                            comment: lesson.comment
-                        })),
-                    ),
-                ).flat().flat(),
+                lessons,
             },
             generationDate,
-            validFrom
+            validFrom,
         };
     }
 }
