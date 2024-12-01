@@ -49,11 +49,16 @@ export function pushOptivumVersion(hash: string, data: TimetableVersionData, gen
         .returning(['id']);
 }
 
-export function pushOptivumVersionSchool(optivumVersionId: number, rspoId: number) {
-    return client<OptivumTimetableVersionSchoolsTable>('optivum_timetable_version_schools').insert({
-        optivum_timetable_version_id: optivumVersionId,
-        school_rspo_id: rspoId,
-    }).onConflict().ignore();
+export function pushOptivumVersionSchools(optivumVersionId: number, rspoIds: number[]) {
+    return client<OptivumTimetableVersionSchoolsTable>('optivum_timetable_version_schools')
+        .insert(
+            rspoIds.map((rspoId) => ({
+                optivum_timetable_version_id: optivumVersionId,
+                school_rspo_id: rspoId,
+            })),
+        )
+        .onConflict()
+        .ignore();
 }
 
 export function pushOptivumVersionSources(optivumVersionId: number, sources: string[]) {

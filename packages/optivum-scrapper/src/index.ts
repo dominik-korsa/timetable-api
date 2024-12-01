@@ -4,7 +4,7 @@ import {
     getOptivumCandidates,
     getOptivumVersionByHash,
     pushOptivumVersion,
-    pushOptivumVersionSchool,
+    pushOptivumVersionSchools,
     pushOptivumVersionSources,
 } from './db.js';
 import { OptivumScrapper } from './client.js';
@@ -67,11 +67,7 @@ async function handleOptivumCandidate({
     }
 
     await pushOptivumVersionSources(version.id, sources);
-    await Promise.all(
-        rspoIds.map(async (rspoId) => {
-            await pushOptivumVersionSchool(version.id, rspoId);
-        }),
-    );
+    await pushOptivumVersionSchools(version.id, rspoIds);
 }
 
 main()
