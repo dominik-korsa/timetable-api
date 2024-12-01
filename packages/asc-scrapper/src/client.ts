@@ -48,11 +48,24 @@ export class Client {
     private readonly axios: Axios;
     private readonly baseURL: string;
 
+    /**
+     * Creates new instance of the class.
+     * @param axios An axios instance for making HTTP requests.
+     * @param edupageInstanceId An id of edupage instance eg. v-lo-krakow.
+     */
     constructor(axios: Axios, edupageInstanceId: string) {
         this.axios = axios;
         this.baseURL = `https://${edupageInstanceId}.edupage.org/timetable/server`;
     }
 
+    /**
+     * Sends request to the EduPage timetable server API.
+     * @template T The expected type of the response data.
+     * @param controller The controller name for the API endpoint.
+     * @param function_ Name of the function invoked by the controller.
+     * @param args The arguments to pass in the request payload.
+     * @returns A promise resolving to the response data of type T.
+     */
     private async sendRequest<T>(controller: string, function_: string, args: unknown[]): Promise<T> {
         const url = `${this.baseURL}/${controller}?__func=${function_}`;
         const response = await this.axios.post<
@@ -65,6 +78,10 @@ export class Client {
         return response.data.r;
     }
 
+    /**
+     * Fetches the list of timetable versions.
+     * @returns A promise resolving to an array of timetable version list.
+     */
     public async getTimetableVersionList(): Promise<TimetableVersionInfo[]> {
         const response = await this.sendRequest<TimetableVersionListRaw>('ttviewer.js', 'getTTViewerData', [
             null,
@@ -79,6 +96,11 @@ export class Client {
         }));
     }
 
+    /**
+     * Fetches and parses data for a specific timetable version.
+     * @param number A identifier of the timetable version.
+     * @returns A promise resolving to a parsed timetable version data.
+     */
     public async getTimetableVersion(number: string): Promise<TimetableVersionData> {
         const response = await this.sendRequest<TimetableVersionRaw>('regulartt.js', 'regularttGetData', [
             null,
@@ -87,6 +109,11 @@ export class Client {
         return this.parseTimetableVersion(response);
     }
 
+    /**
+     * Parses raw timetable data into a common format.
+     * @param raw The raw timetable data returned by API.
+     * @returns A parsed timetable version data.
+     */
     private parseTimetableVersion(raw: TimetableVersionRaw): TimetableVersionData {
         const tables = raw.dbiAccessorRes.tables;
         const periodsTableRow = getTableRowsById<PeriodsTableRow>(tables, 'periods');
@@ -173,6 +200,11 @@ export class Client {
         };
     }
 
+     /**
+     * Fetches and parses data for all timetable versions.
+     *
+     * @returns A promise resolving to an array of timetable version data.
+     */
     public async getAllVersions() {
         const versionList = await this.getTimetableVersionList();
         const versions = await Promise.all(
