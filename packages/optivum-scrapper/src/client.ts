@@ -102,7 +102,7 @@ export class OptivumScrapper {
 
     public async preParse(unitList: Unit[]) {
         await this.getUnitHTMLs(unitList);
-        if (!this.unitList.length) throw new Error('No units found');
+        if (!this.unitList.length) throw new Error('Error during getting unit htmls');
     }
 
     public getHash() {

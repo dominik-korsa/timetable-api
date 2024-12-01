@@ -18,11 +18,22 @@ export interface SchoolsTable {
 
 export interface OptivumTimetableVersionsTable {
     id: number;
-    school_rspo_ids: number[];
-    generated_on: string;
     data: string;
-    discriminant: number;
     hash: string;
+    generated_on: string;
+}
+
+export interface OptivumTimetableVersionSchoolsTable {
+    id: number;
+    optivum_timetable_version_id: number;
+    school_rspo_id: number;
+}
+
+export interface OptivumTimetableVersionSourcesTable {
+    id: number;
+    optivum_timetable_version_id: number;
+    last_checked_at: Date;
+    sources: string[];
 }
 
 export interface OptivumCandidatesTable {
@@ -31,13 +42,6 @@ export interface OptivumCandidatesTable {
     sources: string[];
     unit_list: string;
     added_at: Date;
-}
-
-export interface OptivumTimetableVersionSourcesTable {
-    id: number;
-    optivum_timetable_version_id: number;
-    last_checked_at: Date;
-    sources: string[];
 }
 
 export interface EdupageInstancesTable {
