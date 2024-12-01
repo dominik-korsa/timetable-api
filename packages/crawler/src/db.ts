@@ -1,6 +1,6 @@
 import knex from 'knex';
 import { config } from 'dotenv';
-import { EdupageInstancesTable, OptivumCandidateTable } from '@timetable-api/common';
+import { EdupageInstancesTable, OptivumCandidatesTable } from '@timetable-api/common';
 
 config();
 
@@ -28,7 +28,7 @@ export function pushEdupageInstances(rspoId: number, instances: string[]) {
 }
 
 export function pushOptivumCandidate(rspoId: number, sources: string[], unitListJSON: string) {
-    return client<OptivumCandidateTable>('optivum_candidates')
+    return client<OptivumCandidatesTable>('optivum_candidates')
         .insert({
             school_rspo_ids: [rspoId],
             sources,
