@@ -1,6 +1,6 @@
-import { run } from './client.js';
+import { handleInstitutionType } from './schools.js';
 
-run([
+const INSTITUTION_TYPES = [
     93, // Branżowa szkoła I stopnia
     94, // Branżowa szkoła II stopnia
     97, // Branżowe Centrum Umiejętności
@@ -35,8 +35,16 @@ run([
     20, // Szkoła specjalna przysposabiająca do pracy
     16, // Technikum
     100, // Zespół szkół i placówek oświatowych
-])
+]
+
+async function main() {
+    await Promise.all(INSTITUTION_TYPES.map(async typeId => { await handleInstitutionType(typeId) }))
+}
+
+main()
     .then(() => {
         process.exit();
     })
-    .catch(console.error);
+    .catch((error: unknown) => {
+        console.error(error);
+    });
