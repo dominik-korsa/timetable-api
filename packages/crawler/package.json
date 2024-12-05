@@ -10,15 +10,10 @@
   },
   "dependencies": {
     "@timetable-api/common": "workspace:*",
-    "@timetable-api/optivum-scrapper": "workspace:^",
-    "@timetable-api/asc-scrapper": "workspace:^",
-    "@types/cli-progress": "^3.11.5",
-    "@types/jsdom": "^21.1.6",
-    "@types/pg": "^8.11.5",
-    "axios-retry": "^4.1.0",
-    "cli-progress": "^3.12.0",
+    "@timetable-api/optivum-scrapper": "workspace:*",
+    "axios-retry": "^4.5.0",
+    "cheerio": "^1.0.0",
     "dotenv": "^16.4.5",
-    "jsdom": "^22.1.0",
     "knex": "^3.1.0",
     "pg": "^8.11.5"
   },

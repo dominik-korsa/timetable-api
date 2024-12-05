@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
-import { LessonClass, Lesson } from './types.js';
+import { createHash } from 'crypto';
+import { LessonClass, Lesson, UnitType } from './types.js';
 
 export const parseTime = (value: string): number => {
     const [hours, minutes] = value.split(':').map((part) => parseInt(part, 10));
@@ -12,7 +13,7 @@ export const parseUnitUrl = (url: string) => {
     const match = unitUrlRegex.exec(url);
     if (match === null) return null;
     return {
-        type: match[1] as 'o' | 'n' | 's',
+        type: match[1] as  UnitType,
         id: match[2],
     };
 };
@@ -71,12 +72,6 @@ const parseTeacherFullNameRegex = /(.+?) \((.+?)\)/;
 export const parseTeacherFullName = (fullName: string) => {
     const match = parseTeacherFullNameRegex.exec(fullName);
     return match ? { name: match[1], short: match[2] } : null;
-};
-
-const parseClassCodeRegex = /([0-9]|r|t|c|p)(.+?)/;
-export const parseClassCode = (code: string) => {
-    const match = parseClassCodeRegex.exec(code);
-    return match ? { level: match[1], order: match[2] } : null;
 };
 
 export const parseLesson = (fragment: DocumentFragment): Lesson => {
@@ -157,3 +152,23 @@ export const parseLesson = (fragment: DocumentFragment): Lesson => {
 
 export const getUnitKey = (unit: { id: string | null; short: string }) => (unit.id ?? `@${unit.short}`);
 
+export const getTimetableHash = (htmls: string[]): string =>
+    createHash('sha512').update(JSON.stringify(htmls.sort())).digest('hex');
+
+/* SOURCE: https://github.com/dominik-korsa/timetable/blob/main/src/utils.ts */
+export class DefaultsMap<K, V> extends Map<K, V> {
+    private readonly generateDefault: (key: K) => V;
+
+    constructor(defaultGenerator: (key: K) => V) {
+      super();
+      this.generateDefault = defaultGenerator;
+    }
+
+    override get(key: K): V {
+      let value = super.get(key);
+      if (value !== undefined) return value;
+      value = this.generateDefault(key);
+      this.set(key, value);
+      return value;
+    }
+  }

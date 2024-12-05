@@ -3,8 +3,8 @@ import { Axios, AxiosResponse } from 'axios';
 import { AxiosCacheInstance } from 'axios-cache-interceptor';
 import { JSDOM } from 'jsdom';
 import { Table } from './table.js';
-import { Unit } from './types.js';
-import { parseUnitLink, parseUnitUrl } from './utils.js';
+import { Unit, UnitType } from './types.js';
+import { parseUnitLink } from './utils.js';
 import { isDefined } from '@timetable-api/common';
 
 export class Timetable {
@@ -16,7 +16,7 @@ export class Timetable {
         this.axios = axios;
     }
 
-    private async getDocument(path: string): Promise<{
+    public async getDocument(path: string): Promise<{
         response: string;
         responseUrl: string;
     }> {
@@ -29,52 +29,65 @@ export class Timetable {
         });
         return {
             response: response.data as string,
-            responseUrl: response.config.url ?? url,
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            responseUrl: response.request.res.responseUrl as string | null ?? url,
         };
     }
 
-    public async getTable(symbol: string, id: string): Promise<Table> {
-        const { response } = await this.getDocument(`plany/${symbol}${id}.html`);
+    public async getTable(type: UnitType, id: string): Promise<Table> {
+        const { response } = await this.getDocument(`plany/${type}${id}.html`);
         return new Table(response);
     }
 
-    public async getUnitList(): Promise<Unit[]> {
+    private async getIndexPageFromScript() {
+        const scriptResponse = (await this.getDocument('../scripts/powrot.js')).response;
+        const { response, responseUrl } = await this.getDocument(
+            /<a href="(.*?)">Plan lekcji<\/a>/.exec(scriptResponse)?.[1] ?? '../index.html',
+        );
+        return [response, responseUrl];
+    }
+
+    private async getListPageFromFrame(frame: Element) {
+        const listPath = frame.getAttribute('src')!;
+        const { response, responseUrl } = await this.getDocument(listPath);
+        return [response, responseUrl];
+    }
+
+    public async getUnitList(): Promise<{ units: Unit[]; sources: string[] }> {
         const { response, responseUrl } = await this.getDocument(this.baseUrl);
         this.baseUrl = responseUrl;
         let document = new JSDOM(response).window.document;
         if (document.querySelector('script[src="../scripts/powrot.js"]') !== null) {
-            const scriptResponse = (await this.getDocument('../scripts/powrot.js')).response;
-            const { response, responseUrl } = await this.getDocument(
-                /<a href="(.*?)">Plan lekcji<\/a>/.exec(scriptResponse)?.[0] ?? '../index.html',
-            );
+            const [response, responseUrl] = await this.getIndexPageFromScript();
             this.baseUrl = responseUrl;
             document = new JSDOM(response).window.document;
         }
         if (document.querySelector('.menu') !== null) {
-            const list: Unit[] = [];
+            const list: { units: Unit[]; sources: string[] } = { units: [], sources: [] };
             await Promise.all(
-                [...document.querySelectorAll('a[hidefocus="true"]')].map(async (listLink) => {
-                    const href = listLink.getAttribute('href');
-                    if (href == null) return;
-                    const { response } = await this.getDocument(href);
+                [...document.querySelectorAll('a[hidefocus="true"][href]')].map(async (listLink) => {
+                    const href = listLink.getAttribute('href')!;
+                    const { response, responseUrl } = await this.getDocument(href);
                     const unitList = this.parseUnitList(response);
-                    list.push(...unitList);
+                    list.units.push(...unitList);
+                    list.sources.push(responseUrl);
                 }),
             );
+            list.sources.sort();
             return list;
         }
-        if (document.querySelector('frame[name="list"]')) {
-            const { response } = await this.getDocument(
-                document.querySelector('frame[name="list"]')?.getAttribute('src') ?? 'lista.html',
-            );
+        const frame = document.querySelector('frame[name="list"][src]');
+        if (frame) {
+            const [response, responseUrl] = await this.getListPageFromFrame(frame);
+            this.baseUrl = responseUrl;
             document = new JSDOM(response).window.document;
         }
-        return this.parseUnitList(document.documentElement.innerHTML);
+        return { units: this.parseUnitList(document.documentElement.innerHTML), sources: [this.baseUrl] };
     }
 
     public parseUnitList(html: string): Unit[] {
         const document: Document = new JSDOM(html).window.document;
-        let units: { type: 'o' | 'n' | 's'; id: string; fullName: string }[];
+        let units: { type: UnitType; id: string; fullName: string }[];
         if (document.querySelector('select')) {
             units = [...document.querySelectorAll('select')].flatMap((select) => {
                 const type = select.querySelector('option:first-child')?.textContent?.[0];
