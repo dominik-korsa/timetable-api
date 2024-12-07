@@ -1,6 +1,6 @@
 import { Institution } from "./rspo/types"
 
-export const mapSchool = (school: Institution) => ({
+export const mapSchool = (school: Institution, webiste: string | null) => ({
     rspo_id: school.numerRspo,
     name: school.nazwa,
     commune_teryt: school.gminaKodTERYT,
@@ -11,7 +11,7 @@ export const mapSchool = (school: Institution) => ({
     corresp_addr_building_nr: school.adresDoKorespondecjiNumerBudynku,
     corresp_addr_apartament_nr: school.adresDoKorespondecjiNumerLokalu,
     corresp_addr_zip_code: school.adresDoKorespondecjiKodPocztowy,
-    website_url: checkUrl(school.stronaInternetowa),
+    website_url: webiste !== null && webiste.length > 512 ? null : webiste,
     institution_type: school.typ.id,
     parent_rspo_id:
         school.podmiotNadrzedny !== null
@@ -26,7 +26,7 @@ function extractInstitutionId(url: string): string {
 }
 
 const urlRegex = /(^https?:\/\/)?((?:[a-z0-9-]+\.)+[a-z][a-z0-9-]*)(:\d{1,5})?(\/.*)?$/m;
-function checkUrl(url: string): string | null {
+export function checkUrl(url: string): string | null {
     if (url === '' || !urlRegex.test(url)) return null;
     if (!url.includes('://')) url = 'http://' + url;
     url.replace('://www.', '://');

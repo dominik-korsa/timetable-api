@@ -14,5 +14,8 @@ const dbClient = knex({
 });
 
 export function pushSchools(schools: Partial<SchoolsTable>[]) {
-    return dbClient<SchoolsTable>('schools').insert(schools).onConflict('rspo_id').merge();
+    return dbClient<SchoolsTable>('schools')
+        .insert(schools.map((school) => Object.assign(school, { generated_on: dbClient.fn.now() })))
+        .onConflict('rspo_id')
+        .merge();
 }
