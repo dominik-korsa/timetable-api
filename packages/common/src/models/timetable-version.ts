@@ -1,25 +1,21 @@
 export interface TimetableTimeSlot {
-    id: string;
     name: string;
     beginMinute: number;
     endMinute: number;
 }
 
 export interface TimetableDay {
-    id: string;
     name: string;
-    short: null;
+    short: string | null;
     isoNumber: number | null;
 }
 
 export interface TimetableWeek {
-    id: string;
     name: string;
     short: string;
 }
 
 export interface TimetablePeriod {
-    id: string;
     name: string;
     short: string;
 }
@@ -86,15 +82,17 @@ export interface TimetableStudent {
 }
 
 export interface TimetableLesson {
-    timeSlotId: string;
-    dayId: string;
-    weekId: string | null;
+    timeSlotIndex: number | null;
+    beginMinute: number;
+    endMinute: number;
+    dayIndex: number;
+    weekIndex: number | null;
+    periodIndex: number | null;
     subjectId: string | null;
     teacherIds: string[];
     roomIds: string[];
     groupIds: string[];
     classIds: string[];
-    periodId: string | null;
     seminarGroup: number | null;
     studentIds: string[];
     interclassGroupId: string | null;

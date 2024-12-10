@@ -9,6 +9,7 @@ import {
     TimetableTeacher,
     TimetableTimeSlot,
     TimetableWeek,
+    parseTime,
     slugify,
 } from '@timetable-api/common';
 import {
@@ -23,7 +24,6 @@ import {
     TermsTableRow,
     WeeksTableRow,
 } from './types.js';
-import { parseTime } from './utils.js';
 
 const weekdayIsoNumber: Partial<Record<string, number>> = {
     poniedzialek: 1,
@@ -36,27 +36,23 @@ const weekdayIsoNumber: Partial<Record<string, number>> = {
 };
 
 export const mapPeriodsTableRow = (row: PeriodsTableRow): TimetableTimeSlot => ({
-    id: row.id,
     name: row.short,
     beginMinute: parseTime(row.starttime),
     endMinute: parseTime(row.endtime),
 });
 
 export const mapDaysTableRow = (row: DaysTableRow): TimetableDay => ({
-    id: row.id,
     name: row.name,
     short: row.short,
     isoNumber: weekdayIsoNumber[slugify(row.name)] ?? null,
 });
 
 export const mapWeeksTableRow = (row: WeeksTableRow): TimetableWeek => ({
-    id: row.id,
     name: row.name,
     short: row.short,
 });
 
 export const mapTermsTableRow = (row: TermsTableRow): TimetablePeriod => ({
-    id: row.id,
     name: row.name,
     short: row.short,
 });

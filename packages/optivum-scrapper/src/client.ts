@@ -25,6 +25,8 @@ export class OptivumScrapper {
     private teacherShorts: Map<string, string>;
     private roomShorts: Map<string, string>;
 
+    private days: Day[];
+    private timeSlots: TimeSlot[];
     private subjects: Set<string>;
     private readonly interclassGroups: Map<string, string[]>;
     private commonGroups: Map<string, { subjectId: string; classId: string; groupShort: string }>;
@@ -43,6 +45,8 @@ export class OptivumScrapper {
         this.roomShorts = new Map<string, string>();
 
         // Common
+        this.days = [];
+        this.timeSlots = [];
         this.subjects = new Set<string>();
         this.interclassGroups = new Map();
         this.commonGroups = new Map();
@@ -77,8 +81,6 @@ export class OptivumScrapper {
     parse() {
         let generatedDate: string | null = null;
         let validFrom: string | null = null;
-        let days: Day[] = [];
-        let timeSlots: TimeSlot[] = [];
 
         if (!this.unitList.length) throw new Error('No units');
         this.unitList.forEach((unit) => {
@@ -92,9 +94,9 @@ export class OptivumScrapper {
             if (generatedDate === null) {
                 generatedDate = table.getGeneratedDate();
                 validFrom = table.getValidationDate();
-                days = table.getDays();
+                this.days = table.getDays();
             }
-            if (table.getRowsLength() > timeSlots.length) timeSlots = table.getTimeSlots();
+            if (table.getRowsLength() > this.timeSlots.length) this.timeSlots = table.getTimeSlots();
 
             const { subjects, roomShorts, teacherShorts, classShorts, groups, interclassGroupIds, lessons } =
                 table.parseMainTable();
@@ -104,7 +106,7 @@ export class OptivumScrapper {
             });
         });
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        return this.formatResult(days, timeSlots, generatedDate!, validFrom);
+        return this.formatResult(generatedDate!, validFrom);
     }
 
     private handleTableCommon(
@@ -184,12 +186,15 @@ export class OptivumScrapper {
     private formatLessons() {
         const lessons: TimetableLesson[] = [];
         this.lessons.forEach((cell, index) => {
-            const [dayIndex, timeSlotIndex] = index.split('|');
+            const [dayIndex, timeSlotIndex] = index.split('|').map(Number);
+            const timeSlot = this.timeSlots[timeSlotIndex];
             cell.forEach((lesson) => {
                 const isDefaultLesson = lesson.type === 'default';
                 lessons.push({
-                    timeSlotId: timeSlotIndex.toString(),
-                    dayId: dayIndex.toString(),
+                    timeSlotIndex,
+                    dayIndex,
+                    beginMinute: timeSlot.beginMinute,
+                    endMinute: timeSlot.endMinute,
                     comment: !isDefaultLesson ? lesson.comment : null,
                     subjectId: isDefaultLesson ? lesson.subjectId : null,
                     teacherIds: isDefaultLesson && lesson.teacherId !== null ? [lesson.teacherId] : [],
@@ -197,8 +202,8 @@ export class OptivumScrapper {
                     groupIds: isDefaultLesson ? [...lesson.groupIds] : [],
                     classIds: isDefaultLesson ? [...lesson.classIds] : [],
                     interclassGroupId: isDefaultLesson ? lesson.interclassGroupId : null,
-                    weekId: null,
-                    periodId: null,
+                    weekIndex: null,
+                    periodIndex: null,
                     seminarGroup: null,
                     studentIds: [],
                 });
@@ -234,8 +239,6 @@ export class OptivumScrapper {
     }
 
     private formatResult(
-        days: Day[],
-        timeSlots: TimeSlot[],
         generatedDate: string,
         validFrom: string | null,
     ): ParseResult {
@@ -243,8 +246,8 @@ export class OptivumScrapper {
         return {
             data: {
                 common: {
-                    days: days.map(mapDay),
-                    timeSlots: timeSlots.map(mapTimeSlot),
+                    days: this.days.map(mapDay),
+                    timeSlots: this.timeSlots.map(mapTimeSlot),
                     classes: this.formatUnits(UnitType.CLASS) as TimetableClass[],
                     teachers: this.formatUnits(UnitType.TEACHER) as TimetableTeacher[],
                     rooms: this.formatUnits(UnitType.ROOM) as TimetableRoom[],

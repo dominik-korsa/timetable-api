@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { isDefined, slugify } from '@timetable-api/common';
-import { getDocument, parseTime, parseUnitLink, splitByBr } from './utils.js';
+import { isDefined, parseTime, slugify } from '@timetable-api/common';
+import { getDocument, parseUnitLink, splitByBr } from './utils.js';
 import { CommonGroup, Day, LessonTimeSlot, ParsedMainTable, TimeSlot, UnitType } from './types.js';
 
 //TODO: Think about groupShort (from subject)

@@ -4,11 +4,6 @@ import { createHash } from 'crypto';
 import { UnitType } from './types.js';
 import { JSDOM } from 'jsdom';
 
-export const parseTime = (value: string) => {
-    const [hours, minutes] = value.split(':').map((part) => parseInt(part, 10));
-    return hours * 60 + minutes;
-};
-
 const unitUrlRegex = /([ons])(\d+).html/;
 export const parseUnitUrl = (url: string) => {
     const match = unitUrlRegex.exec(url);

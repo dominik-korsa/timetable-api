@@ -1,9 +1,9 @@
-import { Day, TimeSlot, UnitType } from './types';
-import { getUnitName } from './utils';
+import { Day, TimeSlot, UnitType } from './types.js';
+import { getUnitName } from './utils.js';
 
-export const mapDay = ({ name, isoNumber }: Day) => ({ short: null, name, isoNumber, id: '0' });
+export const mapDay = ({ name, isoNumber }: Day) => ({ short: null, name, isoNumber });
 
-export const mapTimeSlot = ({ name, beginMinute, endMinute }: TimeSlot) => ({ name, beginMinute, endMinute, id: '0' });
+export const mapTimeSlot = ({ name, beginMinute, endMinute }: TimeSlot) => ({ name, beginMinute, endMinute });
 
 export const mapInterclassGroup = ([id, classIds]: [string, string[]]) => ({ id, classIds });
 

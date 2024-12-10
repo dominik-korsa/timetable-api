@@ -33,7 +33,7 @@ import {
     mapTermsTableRow,
 } from './mappers.js';
 import { getTableRowsById } from './utils.js';
-import { TimetableVersionData } from '@timetable-api/common';
+import { parseTime, TimetableVersionData } from '@timetable-api/common';
 
 interface ServerRequestPayload {
     __args: unknown[];
@@ -161,26 +161,27 @@ export class Client {
                         const daysDef = daysDefsTableRows.find(
                             (daysDefsRow) => daysDefsRow.vals.length === 1 && daysDefsRow.vals[0] === cardsRow.days,
                         );
+                        if (!daysDef) throw Error('Missing daysDef');
                         const weeksDef = weeksDefsTableRows.find(
                             (weeksDefsRow) => weeksDefsRow.vals.length === 1 && weeksDefsRow.vals[0] === cardsRow.weeks,
                         );
+                        if (!weeksDef) throw Error('Missing weeksDef');
                         const termsDef = termsDefsTableRows.find(
                             (termsDefsRow) =>
                                 termsDefsRow.vals.length === 1 && termsDefsRow.vals[0] === lessonsRow.terms,
                         );
-                        if (!daysDef) {
-                            throw Error('Missing daysDef');
-                        }
-                        if (!weeksDef) {
-                            throw Error('Missing weeksDef');
-                        }
-                        if (!termsDef) {
-                            throw Error('Missing termsDef');
-                        }
+                        if (!termsDef) throw Error('Missing termsDef');
+
+                        const period = periodsTableRow.find((period) => period.id === cardsRow.period);
+                        if (!period) throw Error('Missing period');
+
                         return {
-                            timeSlotId: cardsRow.period,
-                            dayId: daysTableRows[daysDefsTableRows.indexOf(daysDef)].id,
-                            weekId: weeksTableRows[weeksDefsTableRows.indexOf(weeksDef)].id,
+                            timeSlotIndex: periodsTableRow.indexOf(period),
+                            beginMinute: parseTime(period.starttime),
+                            endMinute: parseTime(period.starttime),
+                            dayIndex: daysDefsTableRows.indexOf(daysDef),
+                            weekIndex: weeksDefsTableRows.indexOf(weeksDef),
+                            periodIndex: termsDefsTableRows.indexOf(termsDef),
                             subjectId: lessonsRow.subjectid,
                             teacherIds: lessonsRow.teacherids,
                             roomIds: cardsRow.classroomids,
@@ -188,7 +189,6 @@ export class Client {
                                 (group) => !(groupsTableRows.find((row) => row.id === group)?.entireclass ?? false),
                             ),
                             classIds: lessonsRow.classids,
-                            periodId: termsTableRows[termsDefsTableRows.indexOf(termsDef)].id,
                             seminarGroup: lessonsRow.seminargroup,
                             studentIds: lessonsRow.studentids,
                             interclassGroupId: null,
@@ -200,7 +200,7 @@ export class Client {
         };
     }
 
-     /**
+    /**
      * Fetches and parses data for all timetable versions.
      *
      * @returns A promise resolving to an array of timetable version data.

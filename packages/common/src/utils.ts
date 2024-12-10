@@ -20,3 +20,14 @@ export const maxUsing = <T>(items: T[], greaterThan: (lhs: T, rhs: T) => boolean
 
 export const maxBy = <T>(items: T[], field: (item: T) => number) =>
     maxUsing(items, (lhs, rhs) => field(lhs) > field(rhs));
+
+/**
+ * Converts a time string in the format "HH:MM" to the number of minutes since midnight.
+ *
+ * @param value A string representing the time, formatted as "HH:MM".
+ * @returns The number of minutes since midnight.
+ */
+export const parseTime = (value: string) => {
+    const [hours, minutes] = value.split(':').map((part) => parseInt(part, 10));
+    return hours * 60 + minutes;
+};
