@@ -1,405 +1,256 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { Axios } from 'axios';
 import { Timetable } from './timetable.js';
-import {
-    isDefined,
-    TimetableLesson,
-    type TimetableInterclassGroup,
-    type TimetableVersionData,
-} from '@timetable-api/common';
-import { DefaultsMap, getTimetableHash, getUnitKey, parseTeacherFullName } from './utils.js';
+import { TimetableClass, TimetableLesson, TimetableRoom, TimetableTeacher } from '@timetable-api/common';
+import { DefaultsMap, getTimetableHash } from './utils.js';
 import { Table } from './table.js';
-import { Day, Lesson, TimeSlot, Unit, UnitType } from './types.js';
-
-interface ClientUnit {
-    id: string;
-    type: UnitType;
-    short: string | null;
-    name: string | null;
-    fullName: string | null;
-}
-
-type ClientLesson =
-    | {
-          subjectId: string;
-          classIds: string[];
-          teacherId: string | null;
-          roomId: string | null;
-          groupIds: string[];
-          comment: null;
-          interclassGroupId: string | null;
-      }
-    | {
-          subjectId: null;
-          classIds: string[];
-          teacherId: null;
-          roomId: null;
-          groupIds: string[];
-          comment: string;
-          interclassGroupId: null;
-      };
-
-interface CommonGroup {
-    id: string;
-    short: string;
-    subjectId: string;
-    classId: string;
-}
-
-export interface ParseResult {
-    data: TimetableVersionData;
-    validFrom: string | null;
-    generationDate: string;
-}
+import { ClientLesson, Day, LessonTimeSlot, ParseResult, TimeSlot, Unit, UnitType } from './types.js';
+import {
+    mapClass,
+    mapCommonGroup,
+    mapDay,
+    mapInterclassGroup,
+    mapRoom,
+    mapSubject,
+    mapTeacher,
+    mapTimeSlot,
+} from './mappers.js';
 
 export class OptivumScrapper {
     private readonly timetable: Timetable;
-    private unitList: { id: string; fullName: string; type: UnitType; html: string }[];
-    private classes: Map<string, ClientUnit>;
-    private teachers: Map<string, ClientUnit>;
-    private rooms: Map<string, ClientUnit>;
-    private readonly lessons: DefaultsMap<string, ClientLesson[]>;
-    private timeSlots: TimeSlot[];
-    private days: Day[];
-    private readonly subjects: string[];
-    private readonly interclassGroups: Map<string, TimetableInterclassGroup>;
-    private readonly commonGroups: Map<string, CommonGroup>;
 
-    constructor(url: string, axiosInstance: Axios) {
+    private unitList: Unit[];
+    private readonly unitHTMLs: Map<string, string>;
+    private readonly unitFullNames: Map<string, string>;
+    private classShorts: Map<string, string>;
+    private teacherShorts: Map<string, string>;
+    private roomShorts: Map<string, string>;
+
+    private subjects: Set<string>;
+    private readonly interclassGroups: Map<string, string[]>;
+    private commonGroups: Map<string, { subjectId: string; classId: string; groupShort: string }>;
+
+    private readonly lessons: DefaultsMap<string, ClientLesson[]>;
+
+    constructor(url: string, axiosInstance: Axios, unitList?: Unit[]) {
         this.timetable = new Timetable(url, axiosInstance);
-        this.unitList = [];
-        this.classes = new Map();
-        this.teachers = new Map();
-        this.rooms = new Map();
-        this.lessons = new DefaultsMap(() => []);
-        this.timeSlots = [];
-        this.days = [];
-        this.subjects = [];
+
+        // Units
+        this.unitList = unitList ?? [];
+        this.unitHTMLs = new Map<string, string>();
+        this.unitFullNames = new Map<string, string>();
+        this.classShorts = new Map<string, string>();
+        this.teacherShorts = new Map<string, string>();
+        this.roomShorts = new Map<string, string>();
+
+        // Common
+        this.subjects = new Set<string>();
         this.interclassGroups = new Map();
         this.commonGroups = new Map();
+
+        this.lessons = new DefaultsMap(() => []);
     }
 
-    public async getUnitList() {
-        const { units: list, sources } = await this.timetable.getUnitList();
-        return { list, sources };
+    async loadUnitList() {
+        // eslint-disable-next-line prefer-const
+        let { units: unitList, sources } = await this.timetable.getUnitList();
+        this.unitList = unitList;
+        return { unitList, sources };
     }
 
-    private async getUnitHTMLs(list: Unit[]) {
-        this.unitList = (
-            await Promise.all(
-                list.map(async (unit) => {
-                    try {
-                        return Object.assign(unit, {
-                            html: (await this.timetable.getDocument(`plany/${unit.type}${unit.id}.html`)).response,
-                        });
-                    } catch {
-                        return;
-                    }
-                }),
-            )
-        ).filter(isDefined);
-    }
-
-    public async preParse(unitList: Unit[]) {
-        await this.getUnitHTMLs(unitList);
-        if (!this.unitList.length) throw new Error('Error during getting unit htmls');
-    }
-
-    public getHash() {
-        const htmls: string[] = this.unitList.map(({ html }) => html);
-        return getTimetableHash(htmls);
-    }
-
-    private filterUnitsByType(units: ClientUnit[]) {
-        const classes = new Map<string, ClientUnit>();
-        const teachers = new Map<string, ClientUnit>();
-        const rooms = new Map<string, ClientUnit>();
-        units.forEach((unit) => {
-            switch (unit.type) {
-                case 'o':
-                    classes.set(unit.id, {
-                        id: unit.id,
-                        type: unit.type,
-                        name: unit.name,
-                        short: unit.short,
-                        fullName: unit.fullName,
-                    });
-                    break;
-                case 'n':
-                    teachers.set(unit.id, {
-                        id: unit.id,
-                        type: unit.type,
-                        name: unit.name,
-                        short: unit.short,
-                        fullName: unit.fullName,
-                    });
-                    break;
-                case 's':
-                    rooms.set(unit.id, {
-                        id: unit.id,
-                        type: unit.type,
-                        name: unit.name,
-                        short: unit.short,
-                        fullName: unit.fullName,
-                    });
-                    break;
-                default:
-                    break;
-            }
-        });
-        return [classes, teachers, rooms];
-    }
-
-    public parse() {
-        const units = this.unitList.map((unit) =>
-            Object.assign(unit, {
-                short: unit.type === 'n' ? parseTeacherFullName(unit.fullName)?.short ?? null : null,
-                name: unit.type === 'n' ? parseTeacherFullName(unit.fullName)?.name ?? null : null,
-            }),
+    private async loadUnitHTMLs() {
+        await Promise.allSettled(
+            this.unitList.map(async ({ type, id }) =>
+                this.timetable.getUnitHTML(type, id).then((html) => this.unitHTMLs.set(type + id, html)),
+            ),
         );
-        [this.classes, this.teachers, this.rooms] = this.filterUnitsByType(units);
+    }
 
-        let generationDate: string | null = null;
+    async preParse() {
+        if (!this.unitList.length) throw new Error('No units');
+        await this.loadUnitHTMLs();
+    }
+
+    getHash() {
+        return getTimetableHash([...this.unitHTMLs.values()]);
+    }
+
+    parse() {
+        let generatedDate: string | null = null;
         let validFrom: string | null = null;
-        units.forEach((unit) => {
-            const table = new Table(unit.html);
-            if (generationDate === null) {
-                generationDate = table.getGenerationDate();
-                validFrom = table.getValidationDate() ?? null;
-                this.days = table.getDays();
+        let days: Day[] = [];
+        let timeSlots: TimeSlot[] = [];
+
+        if (!this.unitList.length) throw new Error('No units');
+        this.unitList.forEach((unit) => {
+            const html = this.unitHTMLs.get(unit.type + unit.id);
+            if (html === undefined) return;
+
+            const table = new Table(html, unit.id, unit.type);
+
+            this.unitFullNames.set(unit.type + unit.id, table.getTitle());
+
+            if (generatedDate === null) {
+                generatedDate = table.getGeneratedDate();
+                validFrom = table.getValidationDate();
+                days = table.getDays();
             }
-            if (table.getRowsLength() > this.timeSlots.length) {
-                this.timeSlots = table.getTimeSlots();
-            }
-            table.getLessons().forEach(({ lesson, dayIndex, timeSlotIndex }) => {
-                this.handleLesson(unit, lesson, timeSlotIndex, dayIndex);
+            if (table.getRowsLength() > timeSlots.length) timeSlots = table.getTimeSlots();
+
+            const { subjects, roomShorts, teacherShorts, classShorts, groups, interclassGroupIds, lessons } =
+                table.parseMainTable();
+            this.handleTableCommon(unit, subjects, roomShorts, teacherShorts, classShorts, groups, interclassGroupIds);
+            lessons.forEach((lesson) => {
+                this.handleLesson(unit, lesson);
             });
         });
-        return this.formatData(generationDate!, validFrom);
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        return this.formatResult(days, timeSlots, generatedDate!, validFrom);
     }
 
-    private handleLesson(unit: ClientUnit, lesson: Lesson, timeSlotIndex: number, dayIndex: number) {
-        const timeSlotLessons = this.lessons.get(`${dayIndex.toString()}|${timeSlotIndex.toString()}`);
+    private handleTableCommon(
+        unit: Unit,
+        subjects: Set<string>,
+        roomShorts: Map<string, string>,
+        teacherShorts: Map<string, string>,
+        classShorts: Map<string, string>,
+        groups: Map<string, { subjectId: string; classId: string; groupShort: string }>,
+        interclassGroupIds: Set<string>,
+    ) {
+        this.subjects = new Set([...this.subjects, ...subjects]);
+        this.classShorts = new Map([...this.classShorts, ...classShorts]);
+        this.teacherShorts = new Map([...this.teacherShorts, ...teacherShorts]);
+        this.roomShorts = new Map([...this.roomShorts, ...roomShorts]);
+        this.commonGroups = new Map([...this.commonGroups, ...groups]);
+        interclassGroupIds.forEach((id) => {
+            const existingInterclassGroup = this.interclassGroups.get(id);
+            if (existingInterclassGroup) existingInterclassGroup.push(unit.id);
+            else this.interclassGroups.set(id, [unit.id]);
+        });
+    }
+
+    private handleLesson(unit: Unit, lesson: LessonTimeSlot) {
+        const timeSlotLessons = this.lessons.get(`${lesson.dayIndex.toString()}|${lesson.timeSlotIndex.toString()}`);
 
         // Lesson with comment
-        if (lesson.comment !== null) {
-            timeSlotLessons.push({
-                subjectId: null,
-                classIds: [],
-                teacherId: null,
-                roomId: null,
-                groupIds: [],
-                comment: lesson.comment,
-                interclassGroupId: null,
-            });
-            return;
-        }
+        if (lesson.type === 'comment') return timeSlotLessons.push({ type: 'comment', comment: lesson.comment });
 
-        // Subject
-        if (!this.subjects.includes(lesson.subjectId!)) {
-            this.subjects.push(lesson.subjectId!);
-        }
+        const isMatchingLesson = (existingLesson: ClientLesson) => {
+            // Comment
+            if (existingLesson.type === 'comment') return;
 
-        // Teacher, room, classes and common groups
-        const { teacherKey, roomKey, classKeys, commonGroupKeys } = this.handleLessonUnits(unit, lesson);
+            // Lessons without interclass groups (by teacher)
+            if (lesson.teacherId !== null && existingLesson.teacherId !== null)
+                return lesson.teacherId === existingLesson.teacherId;
 
-        // Interclass groups
-        if (lesson.interclassGroupId !== null) {
-            const existingInterclassGroup = this.interclassGroups.get(lesson.interclassGroupId);
-            if (!existingInterclassGroup) {
-                this.interclassGroups.set(lesson.interclassGroupId, {
-                    id: lesson.interclassGroupId,
-                    subjectId: lesson.subjectId!,
-                    classIds: classKeys,
-                });
-            } else {
-                classKeys.forEach((classId) => {
-                    if (!existingInterclassGroup.classIds.includes(classId))
-                        existingInterclassGroup.classIds.push(classId);
-                });
-            }
-        }
+            // Interclass groups
+            if (lesson.subjectId !== existingLesson.subjectId) return;
+            // Interclass groups: class tables
+            if (lesson.interclassGroupId !== null && existingLesson.interclassGroupId !== null)
+                return lesson.interclassGroupId === existingLesson.interclassGroupId;
+            // Interclass groups: teacher tables
+            if (unit.type !== UnitType.CLASS)
+                return [...existingLesson.classIds.values()].find((classId) => lesson.classIds.has(classId));
+        };
+        const existingLesson = timeSlotLessons.find(isMatchingLesson);
 
-        // Lesson
-        const existingLesson = timeSlotLessons.find(
-            (l) =>
-                l.interclassGroupId !== null &&
-                (l.interclassGroupId === lesson.interclassGroupId ||
-                    (unit.type === 'n' && l.teacherId === unit.id) ||
-                    (unit.type === 's' && l.roomId === unit.id) ||
-                    lesson.classes.find((class_) => {
-                        const classKey = getUnitKey(class_ as { id: string | null; short: string });
-                        if (class_.groupShort !== null)
-                            return l.groupIds.find(
-                                (groupId) => groupId === `${classKey};${lesson.subjectId!};${groupId}`,
-                            );
-                        else return l.classIds.includes(classKey);
-                    })),
-        );
         if (!existingLesson) {
-            timeSlotLessons.push({
-                classIds: classKeys,
-                teacherId: teacherKey,
-                roomId: roomKey,
-                subjectId: lesson.subjectId!,
+            return timeSlotLessons.push({
+                type: 'default',
+                classIds: lesson.classIds,
+                teacherId: lesson.teacherId,
+                roomId: lesson.roomId,
+                subjectId: lesson.subjectId,
                 interclassGroupId: lesson.interclassGroupId,
-                groupIds: commonGroupKeys,
-                comment: null,
+                groupIds: lesson.groupIds,
             });
-        } else {
-            if (unit.type === 'o' && !existingLesson.classIds.includes(unit.id)) existingLesson.classIds.push(unit.id);
-            commonGroupKeys.forEach((commonGroupKey) => {
-                if (!existingLesson.groupIds.includes(commonGroupKey)) existingLesson.groupIds.push(commonGroupKey);
-            });
-            if (unit.type === 'n' && existingLesson.teacherId === null) existingLesson.teacherId = unit.id;
-            if (unit.type === 's' && existingLesson.roomId === null) existingLesson.roomId = unit.id;
         }
+        if (existingLesson.type === 'comment') return;
+
+        // Uzupełni teacherId, gdy grupa międzyoddziałowa i nie było info o nauczycielu
+        if (
+            existingLesson.interclassGroupId !== null &&
+            unit.type === UnitType.TEACHER &&
+            existingLesson.teacherId === null
+        )
+            existingLesson.teacherId = unit.id;
+        // Uzupełnij interclassGroupId
+        else if (lesson.interclassGroupId !== null && existingLesson.interclassGroupId === null)
+            existingLesson.interclassGroupId = lesson.interclassGroupId;
+        // Uzupełnij classIds i groupIds
+        lesson.classIds.forEach((classId) => existingLesson.classIds.add(classId));
+        lesson.groupIds.forEach((groupId) => existingLesson.groupIds.add(groupId));
     }
 
-    private handleLessonUnits(unit: ClientUnit, lesson: Lesson) {
-        // Teacher
-        const teacherKey = lesson.teacher ? getUnitKey(lesson.teacher) : unit.type === 'n' ? unit.id : null;
-        if (teacherKey !== null && !this.teachers.has(teacherKey)) {
-            this.teachers.set(teacherKey, {
-                id: teacherKey,
-                name: null,
-                short: lesson.teacher!.short,
-                fullName: null,
-                type: 'n',
-            });
-        }
-
-        // Room
-        const roomKey = lesson.room ? getUnitKey(lesson.room) : unit.type === 's' ? unit.id : null;
-        if (roomKey !== null) {
-            const existingRoom = this.rooms.get(roomKey);
-            if (!existingRoom) {
-                this.rooms.set(roomKey, {
-                    id: roomKey,
-                    name: null,
-                    short: lesson.room!.short,
-                    fullName: null,
-                    type: 's',
-                });
-            }
-            if (existingRoom?.short === null && lesson.room?.short != null) {
-                existingRoom.short = lesson.room.short;
-                if (existingRoom.fullName !== null)
-                    existingRoom.name = existingRoom.fullName.replace(lesson.room.short, '').trim();
-            }
-        }
-
-        // Classes and common groups
-        const commonGroupKeys: string[] = [];
-        const classKeys: string[] = unit.type === 'o' ? [unit.id] : [];
-        lesson.classes.forEach((class_) => {
-            const classKey = class_.short !== null ? getUnitKey(class_ as { id: string | null; short: string }) : null;
-            if (classKey !== null) {
-                classKeys.push(classKey);
-                const existingClass = this.classes.get(classKey);
-                if (!existingClass) {
-                    this.classes.set(classKey, {
-                        id: classKey,
-                        short: class_.short,
-                        name: null,
-                        fullName: null,
-                        type: 'o',
-                    });
-                }
-                if (existingClass?.short === null) {
-                    existingClass.short = class_.short;
-                    if (existingClass.fullName !== null && class_.short !== null)
-                        existingClass.name = existingClass.fullName.replace(class_.short, '').trim();
-                }
-            }
-            const commonGroupKey =
-                class_.groupShort !== null && classKey !== null ? `${classKey};${lesson.subjectId!};${class_.groupShort}` : null;
-            if (commonGroupKey !== null) commonGroupKeys.push(commonGroupKey);
-            if (commonGroupKey !== null && !this.commonGroups.has(commonGroupKey))
-                this.commonGroups.set(commonGroupKey, {
-                    id: commonGroupKey,
-                    short: class_.groupShort!,
-                    subjectId: lesson.subjectId!,
-                    classId: classKey ?? unit.id,
-                });
-        });
-        return { teacherKey, roomKey, classKeys, commonGroupKeys };
-    }
-
-    private formatData(generationDate: string, validFrom: string | null): ParseResult {
+    private formatLessons() {
         const lessons: TimetableLesson[] = [];
         this.lessons.forEach((cell, index) => {
-            const [dayIndex, timeSlotIndex] = index.split('|')
+            const [dayIndex, timeSlotIndex] = index.split('|');
             cell.forEach((lesson) => {
+                const isDefaultLesson = lesson.type === 'default';
                 lessons.push({
                     timeSlotId: timeSlotIndex.toString(),
                     dayId: dayIndex.toString(),
+                    comment: !isDefaultLesson ? lesson.comment : null,
+                    subjectId: isDefaultLesson ? lesson.subjectId : null,
+                    teacherIds: isDefaultLesson && lesson.teacherId !== null ? [lesson.teacherId] : [],
+                    roomIds: isDefaultLesson && lesson.roomId !== null ? [lesson.roomId] : [],
+                    groupIds: isDefaultLesson ? [...lesson.groupIds] : [],
+                    classIds: isDefaultLesson ? [...lesson.classIds] : [],
+                    interclassGroupId: isDefaultLesson ? lesson.interclassGroupId : null,
                     weekId: null,
-                    subjectId: lesson.subjectId,
-                    teacherIds: lesson.teacherId !== null ? [lesson.teacherId] : [],
-                    roomIds: lesson.roomId !== null ? [lesson.roomId] : [],
-                    groupIds: lesson.groupIds,
-                    classIds: lesson.classIds,
                     periodId: null,
                     seminarGroup: null,
                     studentIds: [],
-                    interclassGroupId: lesson.interclassGroupId,
-                    comment: lesson.comment,
                 });
             });
         });
+        return lessons;
+    }
+
+    private formatUnits(type: UnitType) {
+        const shorts = (() => {
+            switch (type) {
+                case UnitType.CLASS:
+                    return [...this.classShorts];
+                case UnitType.TEACHER:
+                    return [...this.teacherShorts];
+                case UnitType.ROOM:
+                    return [...this.roomShorts];
+            }
+        })();
+        return shorts
+            .sort((a, b) => Number(a[0]) - Number(b[0]))
+            .map(([id, short]) => {
+                const fullName = this.unitFullNames.get(type + id) ?? null;
+                switch (type) {
+                    case UnitType.CLASS:
+                        return mapClass({ id, short, fullName });
+                    case UnitType.TEACHER:
+                        return mapTeacher({ id, short, fullName });
+                    case UnitType.ROOM:
+                        return mapRoom({ id, short, fullName });
+                }
+            });
+    }
+
+    private formatResult(
+        days: Day[],
+        timeSlots: TimeSlot[],
+        generatedDate: string,
+        validFrom: string | null,
+    ): ParseResult {
+        const lessons = this.formatLessons();
         return {
             data: {
                 common: {
-                    days: this.days.map((day) => ({
-                        id: day.index.toString(),
-                        short: day.name,
-                        name: day.name,
-                        isoNumber: day.isoNumber,
-                    })),
-                    timeSlots: this.timeSlots.map((timeSlot) => ({
-                        id: timeSlot.index.toString(),
-                        name: timeSlot.name,
-                        beginMinute: timeSlot.beginMinute,
-                        endMinute: timeSlot.endMinute,
-                    })),
-                    classes: [...this.classes.values()].map((class_) => ({
-                        id: class_.id,
-                        short: class_.short,
-                        name: class_.name,
-                        fullName: class_.fullName,
-                        color: null,
-                        teacherId: null,
-                    })),
-                    teachers: [...this.teachers.values()].map((teacher) => ({
-                        id: teacher.id,
-                        short: teacher.short,
-                        name: teacher.name,
-                        fullName: teacher.fullName,
-                        color: null,
-                    })),
-                    rooms: [...this.rooms.values()].map((room) => ({
-                        id: room.id,
-                        short: room.short,
-                        name: room.name,
-                        fullName: room.fullName,
-                        color: null,
-                        buildingId: null,
-                    })),
-                    interclassGroups: [...this.interclassGroups.values()],
-                    subjects: this.subjects.map((subjectId) => ({
-                        id: subjectId,
-                        short: subjectId,
-                        name: null,
-                        color: null,
-                    })),
-                    commonGroups: [...this.commonGroups.values()].map((group) => ({
-                        id: group.id,
-                        short: group.short,
-                        subjectId: group.subjectId,
-                        classId: group.classId,
-                        color: null,
-                    })),
+                    days: days.map(mapDay),
+                    timeSlots: timeSlots.map(mapTimeSlot),
+                    classes: this.formatUnits(UnitType.CLASS) as TimetableClass[],
+                    teachers: this.formatUnits(UnitType.TEACHER) as TimetableTeacher[],
+                    rooms: this.formatUnits(UnitType.ROOM) as TimetableRoom[],
+                    interclassGroups: [...this.interclassGroups].map(mapInterclassGroup),
+                    subjects: [...this.subjects].map(mapSubject),
+                    commonGroups: [...this.commonGroups].map(mapCommonGroup),
                     buildings: [],
                     periods: [],
                     weeks: [],
@@ -407,7 +258,7 @@ export class OptivumScrapper {
                 },
                 lessons,
             },
-            generationDate,
+            generatedDate,
             validFrom,
         };
     }

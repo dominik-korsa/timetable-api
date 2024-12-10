@@ -8,7 +8,7 @@ export interface TimetableTimeSlot {
 export interface TimetableDay {
     id: string;
     name: string;
-    short: string;
+    short: null;
     isoNumber: number | null;
 }
 
@@ -74,7 +74,6 @@ export interface TimetableCommonGroup {
 
 export interface TimetableInterclassGroup {
     id: string;
-    subjectId: string;
     classIds: string[];
 }
 
