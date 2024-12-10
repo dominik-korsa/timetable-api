@@ -1,41 +1,81 @@
-export type UnitType = 'o' | 'n' | 's';
+import { TimetableVersionData } from "@timetable-api/common";
 
 export interface Unit {
     id: string;
     type: UnitType;
-    fullName: string;
+}
+
+export enum UnitType {
+    CLASS = 'o',
+    TEACHER = 'n',
+    ROOM = 's',
 }
 
 export interface TimeSlot {
-    index: number;
     name: string;
     beginMinute: number;
     endMinute: number;
 }
 
 export interface Day {
-    index: number;
     name: string;
     isoNumber: number | null;
 }
 
-export interface LessonClass {
-    id: string | null;
-    short: string | null;
-    groupShort: string | null;
+
+export type Lesson =
+    | {
+          type: 'comment';
+          comment: string;
+      }
+    | {
+          type: 'default';
+          subjectId: string;
+          roomId: string | null;
+          teacherId: string | null;
+          classIds: Set<string>;
+          groupIds: Set<string>;
+          interclassGroupId: string | null;
+      };
+
+export interface CommonGroup {
+    subjectId: string;
+    classId: string;
+    groupShort: string;
 }
 
-export interface Lesson {
-    subjectId: string | null;
-    teacher: { id: string | null; short: string } | null;
-    room: { id: string | null; short: string } | null;
-    classes: LessonClass[];
-    comment: string | null;
-    interclassGroupId: string | null;
-}
-
-export interface LessonTimeSlot {
-    lesson: Lesson;
+export type LessonTimeSlot = Lesson & {
     dayIndex: number;
     timeSlotIndex: number;
+}
+
+export type ClientLesson =
+    | {
+          type: 'comment';
+          comment: string;
+      }
+    | {
+          type: 'default';
+          subjectId: string;
+          classIds: Set<string>;
+          teacherId: string | null;
+          roomId: string | null;
+          groupIds: Set<string>;
+          interclassGroupId: string | null;
+      };
+
+export interface ParsedMainTable {
+    lessons: LessonTimeSlot[];
+    subjects: Set<string>;
+    roomShorts: Map<string, string>;
+    teacherShorts: Map<string, string>;
+    classShorts: Map<string, string>;
+    groups: Map<string, CommonGroup>;
+    interclassGroupIds: Set<string>;
+}
+
+export interface ParseResult {
+    data: TimetableVersionData;
+    validFrom: string | null;
+    generatedDate: string;
 }

@@ -1,118 +1,94 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { Axios, AxiosResponse } from 'axios';
-import { AxiosCacheInstance } from 'axios-cache-interceptor';
-import { JSDOM } from 'jsdom';
-import { Table } from './table.js';
+import { Axios } from 'axios';
 import { Unit, UnitType } from './types.js';
-import { parseUnitLink } from './utils.js';
+import { getDocument, parseUnitLink } from './utils.js';
 import { isDefined } from '@timetable-api/common';
 
 export class Timetable {
     private baseUrl: string;
-    private readonly axios: Axios | AxiosCacheInstance;
+    private readonly axios: Axios;
 
-    constructor(baseUrl: string, axios: Axios | AxiosCacheInstance) {
+    constructor(baseUrl: string, axios: Axios) {
         this.baseUrl = baseUrl;
         this.axios = axios;
     }
 
-    public async getDocument(path: string): Promise<{
-        response: string;
-        responseUrl: string;
-    }> {
+    async fetchDocument(path: string) {
         const url = new URL(path, this.baseUrl).toString();
-        const response: AxiosResponse = await this.axios.get(url, {
-            headers: {
-                'User-Agent': 'Timetable-Api',
-            },
-            cache: false,
-        });
+        const response = await this.axios.get<string>(url);
         return {
-            response: response.data as string,
+            response: response.data,
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            responseUrl: response.request.res.responseUrl as string | null ?? url,
+            responseUrl: (response.request.res.responseUrl as string | null) ?? url,
         };
     }
 
-    public async getTable(type: UnitType, id: string): Promise<Table> {
-        const { response } = await this.getDocument(`plany/${type}${id}.html`);
-        return new Table(response);
+    async getUnitHTML(type: UnitType, id: string) {
+        const { response } = await this.fetchDocument(`plany/${type}${id}.html`);
+        return response;
     }
 
+    static readonly indexPageAnchorRegex = /<a href="(.*?)">Plan lekcji<\/a>/;
     private async getIndexPageFromScript() {
-        const scriptResponse = (await this.getDocument('../scripts/powrot.js')).response;
-        const { response, responseUrl } = await this.getDocument(
-            /<a href="(.*?)">Plan lekcji<\/a>/.exec(scriptResponse)?.[1] ?? '../index.html',
-        );
-        return [response, responseUrl];
+        const { response: scriptResponse } = await this.fetchDocument('../scripts/powrot.js');
+        return await this.fetchDocument(Timetable.indexPageAnchorRegex.exec(scriptResponse)?.[1] ?? '../index.html');
     }
 
-    private async getListPageFromFrame(frame: Element) {
-        const listPath = frame.getAttribute('src')!;
-        const { response, responseUrl } = await this.getDocument(listPath);
-        return [response, responseUrl];
+    private async getListPageFromFrame(frame: HTMLFrameElement) {
+        return await this.fetchDocument(frame.src);
     }
 
-    public async getUnitList(): Promise<{ units: Unit[]; sources: string[] }> {
-        const { response, responseUrl } = await this.getDocument(this.baseUrl);
+    async getUnitList() {
+        const { response, responseUrl } = await this.fetchDocument(this.baseUrl);
         this.baseUrl = responseUrl;
-        let document = new JSDOM(response).window.document;
-        if (document.querySelector('script[src="../scripts/powrot.js"]') !== null) {
-            const [response, responseUrl] = await this.getIndexPageFromScript();
+        let document = getDocument(response);
+
+        if (document.querySelector('script[src="../scripts/powrot.js"]')) {
+            const { response, responseUrl } = await this.getIndexPageFromScript();
             this.baseUrl = responseUrl;
-            document = new JSDOM(response).window.document;
+            document = getDocument(response);
         }
-        if (document.querySelector('.menu') !== null) {
-            const list: { units: Unit[]; sources: string[] } = { units: [], sources: [] };
-            await Promise.all(
-                [...document.querySelectorAll('a[hidefocus="true"][href]')].map(async (listLink) => {
-                    const href = listLink.getAttribute('href')!;
-                    const { response, responseUrl } = await this.getDocument(href);
-                    const unitList = this.parseUnitList(response);
-                    list.units.push(...unitList);
-                    list.sources.push(responseUrl);
-                }),
-            );
-            list.sources.sort();
-            return list;
-        }
-        const frame = document.querySelector('frame[name="list"][src]');
+
+        if (document.querySelector('.menu')) return await this.handleMulitpageUnitList(document);
+
+        const frame = document.querySelector<HTMLFrameElement>('frame[name="list"][src]');
         if (frame) {
-            const [response, responseUrl] = await this.getListPageFromFrame(frame);
+            const { response, responseUrl } = await this.getListPageFromFrame(frame);
             this.baseUrl = responseUrl;
-            document = new JSDOM(response).window.document;
+            document = getDocument(response);
         }
-        return { units: this.parseUnitList(document.documentElement.innerHTML), sources: [this.baseUrl] };
+
+        return { units: Timetable.parseUnitList(document), sources: [this.baseUrl] };
     }
 
-    public parseUnitList(html: string): Unit[] {
-        const document: Document = new JSDOM(html).window.document;
-        let units: { type: UnitType; id: string; fullName: string }[];
-        if (document.querySelector('select')) {
-            units = [...document.querySelectorAll('select')].flatMap((select) => {
-                const type = select.querySelector('option:first-child')?.textContent?.[0];
-                if (type !== 'o' && type !== 'n' && type !== 's') throw new Error('Unknown type');
-                return [...select.querySelectorAll('option:not(:first-child)')].map((option) => {
-                    const id = option.getAttribute('value');
-                    if (id === null) throw new Error('Missing option value');
-                    return {
-                        id,
-                        type,
-                        fullName: option.textContent ?? '',
-                    };
-                });
-            });
-        } else {
-            const links = document.querySelectorAll('a');
-            units = [...links]
-                .map((link) => {
-                    const parsedLink = parseUnitLink(link);
-                    return parsedLink
-                        ? { id: parsedLink.id, type: parsedLink.type, fullName: link.textContent! }
-                        : null;
-                })
-                .filter(isDefined);
-        }
-        return units;
+    private async handleMulitpageUnitList(document: Document) {
+        const units: Unit[] = [];
+        const sources: string[] = [];
+        await Promise.all(
+            [...document.querySelectorAll<HTMLAnchorElement>('.menu a[href]')].map(async (listLink) => {
+                const { response, responseUrl } = await this.fetchDocument(listLink.href);
+                const listDocument = getDocument(response);
+                units.push(...Timetable.parseUnitList(listDocument));
+                sources.push(responseUrl);
+            }),
+        );
+        sources.sort();
+        return { units, sources };
     }
+
+    private static readonly parseUnitList = (document: Document) =>
+        document.querySelector('select') ? Timetable.parseSelectList(document) : Timetable.parseNormalList(document);
+
+    private static readonly parseSelectList = (document: Document) =>
+        [...document.querySelectorAll<HTMLSelectElement>('select[name]')].flatMap((selectEl) => {
+            const type = selectEl.name[0];
+            if (!['o', 'n', 's'].includes(type)) throw new Error('Unknown type');
+            return [...selectEl.querySelectorAll<HTMLOptionElement>('option[value]')].map((optionEl) => ({
+                id: optionEl.value,
+                type: type as UnitType,
+            }));
+        });
+
+    private static readonly parseNormalList = (document: Document) =>
+        [...document.querySelectorAll('a[href]')].map(parseUnitLink).filter(isDefined);
 }
