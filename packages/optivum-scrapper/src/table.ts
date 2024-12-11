@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { isDefined, parseTime, slugify } from '@timetable-api/common';
-import { getDocument, parseUnitLink, splitByBr } from './utils.js';
+import { getDocument, parseUnitLink } from './utils.js';
 import { CommonGroup, Day, LessonTimeSlot, ParsedMainTable, TimeSlot, UnitType } from './types.js';
 
 //TODO: Think about groupShort (from subject)
@@ -97,7 +97,7 @@ export class Table {
         this.rows.forEach((row, timeSlotIndex) => {
             row.querySelectorAll('.l').forEach((lessonEl, dayIndex) => {
                 lessons.push(
-                    ...splitByBr(lessonEl)
+                    ...Table.splitByBr(lessonEl)
                         .map((fragment) => {
                             const subjectElements = [...fragment.querySelectorAll<HTMLSpanElement>('.p')];
 
@@ -144,7 +144,7 @@ export class Table {
                                 const roomEl = fragment.querySelector('.s');
                                 const roomShort = roomEl?.textContent ?? null;
                                 if (roomEl && roomShort !== null && roomShort !== '@') {
-                                    roomId = parseUnitLink(roomEl)?.id ?? `@${roomShort};`; //getUnitKey(parseUnitLink(roomEl)?.id ?? null, roomShort);
+                                    roomId = parseUnitLink(roomEl)?.id ?? `@${roomShort};`;
                                     roomShorts.set(roomId, roomShort);
                                 }
                             } else roomId = this.id;
@@ -155,7 +155,7 @@ export class Table {
                                 const teacherEl = fragment.querySelector('.n');
                                 if (teacherEl) {
                                     const teacherShort = teacherEl.textContent!;
-                                    teacherId = parseUnitLink(teacherEl)?.id ?? `@${teacherShort}`; // getUnitKey(parseUnitLink(teacherEl)?.id ?? null, teacherShort);
+                                    teacherId = parseUnitLink(teacherEl)?.id ?? `@${teacherShort}`;
                                     teacherShorts.set(teacherId, teacherShort);
                                 }
                             } else teacherId = this.id;
@@ -165,7 +165,7 @@ export class Table {
                             if (this.type !== UnitType.CLASS) {
                                 [...fragment.querySelectorAll('.o')].forEach((classEl) => {
                                     const classShort = classEl.textContent!;
-                                    const classId = parseUnitLink(classEl)?.id ?? `@${classShort}`; //getUnitKey(parseUnitLink(classEl)?.id ?? null, classShort);
+                                    const classId = parseUnitLink(classEl)?.id ?? `@${classShort}`;
                                     classIds.add(classId);
                                     classShorts.set(classId, classShort);
 
@@ -190,4 +190,17 @@ export class Table {
         });
         return { lessons, subjects, roomShorts, teacherShorts, classShorts, groups, interclassGroupIds };
     }
+
+    private static splitByBr(fragment: Element | DocumentFragment) {
+        const buckets: ChildNode[][] = [[]];
+        fragment.childNodes.forEach((node) => {
+            if (node.nodeName === 'BR') buckets.push([]);
+            else buckets[buckets.length - 1].push(node);
+        });
+        return buckets.map((nodes) => {
+            const childFragment = fragment.ownerDocument.createDocumentFragment();
+            childFragment.append(...nodes);
+            return childFragment;
+        });
+    };
 }

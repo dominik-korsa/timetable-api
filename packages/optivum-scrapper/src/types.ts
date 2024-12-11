@@ -1,5 +1,10 @@
 import { TimetableVersionData } from "@timetable-api/common";
 
+export interface UnitList {
+    units: Unit[];
+    sources: string[];
+}
+
 export interface Unit {
     id: string;
     type: UnitType;

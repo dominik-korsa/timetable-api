@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
-
-import { createHash } from 'crypto';
 import { UnitType } from './types.js';
 import { JSDOM } from 'jsdom';
 
@@ -24,44 +21,6 @@ export const getUnitName = (fullName: string, short: string, type: UnitType) => 
     const regex = type === UnitType.TEACHER ? new RegExp(`^(.*?) \\(${short}\\)$`) : new RegExp(`^${short} (.*?)$`);
     return regex.exec(fullName)?.[1] ?? null;
 };
-
-/*export const splitByBr = (fragment: Element | DocumentFragment) => {
-    let lastBucket: ChildNode[] = [];
-    const buckets = [lastBucket];
-    fragment.childNodes.forEach((node) => {
-        if (node.nodeName === 'BR') {
-            lastBucket = [];
-            buckets.push(lastBucket);
-            return;
-        }
-        lastBucket.push(node);
-    });
-    return buckets.map((nodes) => {
-        const childFragment = fragment.ownerDocument.createDocumentFragment();
-        childFragment.append(...nodes);
-        return childFragment;
-    });
-};*/
-
-export const splitByBr = (fragment: Element | DocumentFragment) => {
-    const buckets: ChildNode[][] = [[]];
-    fragment.childNodes.forEach((node) => {
-        if (node.nodeName === 'BR') buckets.push([]);
-        else buckets[buckets.length - 1].push(node);
-    });
-    return buckets.map((nodes) => {
-        const childFragment = fragment.ownerDocument.createDocumentFragment();
-        childFragment.append(...nodes);
-        return childFragment;
-    });
-};
-
-export const getUnitKey = (id: string | null, short: string) => id ?? `@${short}`;
-
-export const createKeyFromShort = (short: string) => `@${short}`;
-
-export const getTimetableHash = (htmls: string[]) =>
-    createHash('sha512').update(JSON.stringify(htmls.sort())).digest('hex');
 
 /* SOURCE: https://github.com/dominik-korsa/timetable/blob/main/src/utils.ts */
 export class DefaultsMap<K, V> extends Map<K, V> {
