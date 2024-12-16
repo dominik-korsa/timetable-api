@@ -1,5 +1,5 @@
 import { CheerioAPI } from 'cheerio';
-import { OptivumScrapper } from '@timetable-api/optivum-scrapper';
+import { Timetable } from '@timetable-api/optivum-scrapper';
 import axios from 'axios';
 import { pushOptivumCandidate } from './db.js';
 
@@ -13,13 +13,13 @@ export function isOptivumCandidate($: CheerioAPI) {
 }
 
 export function checkOptivumCandidate(url: string, rspoId: number) {
-    const scrapper = new OptivumScrapper(url, axios.create());
-    return scrapper.getUnitList().then(async ({ sources, list }) => {
-        if (!list.length) {
+    const timetable = new Timetable(url, axios.create());
+    return timetable.getUnitList().then(async ({ sources, units }) => {
+        if (!units.length) {
             console.warn(`\x1b[103m[RSPO: ${rspoId.toString()}] Empty optivum cantidate list, url: ${url}\x1b[0m`)
             return;
         }
-        const listJSON = JSON.stringify(list);
+        const listJSON = JSON.stringify(units);
         return await pushOptivumCandidate(rspoId, sources, listJSON);
     })
     // eslint-disable-next-line @typescript-eslint/use-unknown-in-catch-callback-variable
