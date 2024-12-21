@@ -100,7 +100,7 @@ export class Timetable {
         [...document.querySelectorAll('a[href]')].map(parseUnitLink).filter(isDefined);
 
     private async getUnitHTMLs() {
-        if (!this.unitHTMLsPromise) this.unitHTMLsPromise = this.fetchUnitHTMLs()
+        if (!this.unitHTMLsPromise) this.unitHTMLsPromise = this.fetchUnitHTMLs();
         return this.unitHTMLsPromise;
     }
 
@@ -154,11 +154,12 @@ export class Timetable {
 
             const parsedTable = table.parseMainTable();
 
-            subjects = new Set([...subjects, ...parsedTable.subjects]);
-            classShorts = new Map([...classShorts, ...parsedTable.classShorts]);
-            teacherShorts = new Map([...teacherShorts, ...parsedTable.teacherShorts]);
-            roomShorts = new Map([...roomShorts, ...parsedTable.roomShorts]);
-            commonGroups = new Map([...commonGroups, ...parsedTable.groups]);
+            parsedTable.subjects.forEach((subjectId) => subjects.add(subjectId));
+            parsedTable.classShorts.forEach((short, id) => classShorts.set(id, short));
+            parsedTable.teacherShorts.forEach((short, id) => teacherShorts.set(id, short));
+            parsedTable.roomShorts.forEach((short, id) => roomShorts.set(id, short));
+            parsedTable.groups.forEach((value, id) => commonGroups.set(id, value));
+            
             parsedTable.interclassGroupIds.forEach((id) => {
                 const existingInterclassGroup = interclassGroups.get(id);
                 if (existingInterclassGroup) existingInterclassGroup.push(unit.id);
