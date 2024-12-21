@@ -60,9 +60,11 @@ impl Db {
     ) -> sqlx::Result<Vec<OptivumTimetableVersion>> {
         sqlx::query_as!(
             OptivumTimetableVersion,
-            r#"SELECT "generated_on", "discriminant" FROM "optivum_timetable_versions"
-                WHERE school_rspo_id = $1
-                ORDER BY generated_on, discriminant"#,
+            r#"SELECT versions.id AS id, versions.generated_on AS generated_on
+                FROM "optivum_timetable_version_schools" AS version_schools
+                INNER JOIN "optivum_timetable_versions" AS versions ON version_schools.optivum_timetable_version_id = versions.id
+                WHERE version_schools.school_rspo_id = $1
+                ORDER BY versions.generated_on, versions.id"#,
             rspo_id,
         )
         .fetch_all(&self.pool)
@@ -71,21 +73,16 @@ impl Db {
 
     pub(crate) async fn get_version_data(
         &self,
-        rspo_id: i32,
-        // generated_on: NaiveDate,
-        generated_on: String,
-        discriminant: i16,
+        id: i32,
     ) -> sqlx::Result<Option<String>> {
         let timetable_data = sqlx::query!(
-            r#"SELECT "timetable_data" FROM "optivum_timetable_versions"
-                WHERE school_rspo_id = $1 AND generated_on = $2 AND discriminant = $3"#,
-            rspo_id,
-            generated_on,
-            discriminant,
+            r#"SELECT "data" FROM "optivum_timetable_versions"
+                WHERE id = $1"#,
+            id,
         )
         .fetch_optional(&self.pool)
         .await?
-        .and_then(|result| result.timetable_data);
+        .map(|result| result.data);
         Ok(timetable_data)
     }
 

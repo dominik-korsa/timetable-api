@@ -27,8 +27,8 @@ pub(crate) struct SchoolWithVersions {
 #[derive(Serialize, JsonSchema)]
 pub(crate) struct OptivumTimetableVersion {
     // pub(crate) generated_on: NaiveDate,
-    pub(crate) generated_on: String,
-    pub(crate) discriminant: i16,
+    pub(crate) id: i32,
+    pub(crate) generated_on: Option<String>,
 }
 
 #[derive(Serialize, JsonSchema)]

@@ -19,7 +19,7 @@ pub(crate) fn create_schools_router() -> ApiRouter<Db> {
         .api_route("/v1/schools", get(list_schools))
         .api_route("/v1/schools/:rspo_id", get(get_school))
         .api_route(
-            "/v1/schools/:rspo_id/optivum-versions/:generated_on/:discriminant",
+            "/v1/optivum-versions/:id",
             get(get_optivum_version_data),
         )
         .api_route("/v1/schools/:rspo_id/submit-url", post(submit_url))
@@ -74,17 +74,14 @@ async fn get_school(
 
 #[derive(Deserialize, JsonSchema)]
 struct OptivumVersionParams {
-    rspo_id: i32,
-    // generated_on: NaiveDate,
-    generated_on: String,
-    discriminant: i16,
+    id: i32,
 }
 async fn get_optivum_version_data(
     State(db): State<Db>,
     Path(params): Path<OptivumVersionParams>,
 ) -> impl IntoApiResponse {
     let timetable_data = db
-        .get_version_data(params.rspo_id, params.generated_on, params.discriminant)
+        .get_version_data(params.id)
         .await?;
     let Some(timetable_data) = timetable_data else {
         return Err(ApiError::EntityNotFound)
