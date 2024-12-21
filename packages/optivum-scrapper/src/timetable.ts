@@ -193,22 +193,24 @@ export class Timetable {
 
         if (lesson.type === 'comment') return timeSlotLessons.push({ type: 'comment', comment: lesson.comment });
 
-        const isMatchingLesson = (existingLesson: ClientLesson) => {
+        const isMatchingLesson = (existingLesson: ClientLesson): boolean => {
             // Comment
-            if (existingLesson.type === 'comment') return;
+            if (existingLesson.type === 'comment') return false;
 
             // Lessons without interclass groups (by teacher)
             if (lesson.teacherId !== null && existingLesson.teacherId !== null)
                 return lesson.teacherId === existingLesson.teacherId;
 
             // Interclass groups
-            if (lesson.subjectId !== existingLesson.subjectId) return;
+            if (lesson.subjectId !== existingLesson.subjectId) return false;
             // Interclass groups: class tables
             if (lesson.interclassGroupId !== null && existingLesson.interclassGroupId !== null)
                 return lesson.interclassGroupId === existingLesson.interclassGroupId;
             // Interclass groups: teacher tables
             if (unit.type !== UnitType.CLASS)
                 return [...existingLesson.classIds.values()].find((classId) => lesson.classIds.has(classId));
+            
+            return false;
         };
         const existingLesson = timeSlotLessons.find(isMatchingLesson);
 
