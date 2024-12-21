@@ -2,9 +2,7 @@ export interface SchoolsTable {
     rspo_id: number;
     name: string;
     generated_on: Date | null;
-    voivodeship_teryt: string;
     commune_teryt: string;
-    county_teryt: string;
     geo_lat: string | null;
     geo_long: string | null;
     corresp_addr_town: string;

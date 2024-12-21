@@ -1,25 +1,23 @@
-import { setupCache } from 'axios-cache-interceptor';
-import Axios from 'axios';
+import axios from 'axios';
 import { Institution } from './types.js';
 
 export class RspoApiClient {
-    private readonly axios = setupCache(Axios, {});
-    private readonly rspoBaseUrl = 'https://api-rspo.mein.gov.pl/api';
+    private readonly axios = axios.create({ baseURL: 'https://api-rspo.men.gov.pl/api' });
     private readonly userAgent = 'Lekcje One API';
 
     async getInstitutions(params: {
-        institutionTypeId: number | undefined;
-        includeLiquidated: boolean | undefined;
-        page: number | undefined;
-    }): Promise<{ data: Institution[]; nextPageAvalible: boolean }> {
+        institutionTypeId?: number;
+        includeLiquidated?: boolean;
+        page?: number;
+    }): Promise<{ data: Institution[]; lastPage: number }> {
         const response = await this.axios.get<{
             'hydra:member': Institution[];
-            'hydra:view': { 'hydra:next': string | undefined };
-        }>(`${this.rspoBaseUrl}/placowki`, {
+            'hydra:view': { 'hydra:last': string };
+        }>(`/placowki`, {
             params: {
-                typ_podmiotu_id: params.institutionTypeId,
-                zlikwidowana: params.includeLiquidated,
                 page: params.page,
+                typ_podmiotu_id: params.institutionTypeId,
+                zlikwidowana: params.includeLiquidated ?? false,
             },
             headers: {
                 'User-Agent': this.userAgent,
@@ -28,17 +26,7 @@ export class RspoApiClient {
         });
         return {
             data: response.data['hydra:member'],
-            nextPageAvalible: response.data['hydra:view']['hydra:next'] !== undefined,
+            lastPage: Number(/\/api\/placowki\/\?(.*)page=(\d+)/.exec(response.data['hydra:view']['hydra:last'])?.[2] ?? 1),
         };
-    }
-
-    async getSchoolInfo(rspoId: number): Promise<Institution> {
-        const response = await this.axios.get<Institution>(`https://api-rspo.mein.gov.pl/api/placowki/${rspoId}`, {
-            headers: {
-                'User-Agent': this.userAgent,
-                Accept: 'application/json',
-            },
-        });
-        return response.data;
     }
 }
