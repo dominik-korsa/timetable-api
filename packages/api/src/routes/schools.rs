@@ -18,6 +18,7 @@ pub(crate) fn create_schools_router() -> ApiRouter<Db> {
     ApiRouter::new()
         .api_route("/v1/schools", get(list_schools))
         .api_route("/v1/tiles/0.5/:tile_lat/:tile_long/schools", get(list_tiles_0_5))
+        .api_route("/v1/tiles/0.5/info", get(get_tiles_0_5_info))
         .api_route("/v1/schools/:rspo_id", get(get_school))
         .api_route(
             "/v1/optivum-versions/:id",
@@ -66,6 +67,14 @@ async fn list_tiles_0_5(
         schools
     }))
 }
+
+async fn get_tiles_0_5_info(
+    State(db): State<Db>,
+) -> impl IntoApiResponse {
+    let info = db.get_tiles_0_5_info().await?;
+    Ok::<_, ApiError>(Json(info))
+}
+
 
 #[derive(Deserialize, JsonSchema)]
 struct SchoolParams {

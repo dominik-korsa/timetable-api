@@ -18,6 +18,14 @@ pub(crate) struct School {
 }
 
 #[derive(Serialize, JsonSchema)]
+pub(crate) struct TilesInfo {
+    pub(crate) min_lat_tile: i32,
+    pub(crate) max_lat_tile: i32,
+    pub(crate) min_long_tile: i32,
+    pub(crate) max_long_tile: i32,
+}
+
+#[derive(Serialize, JsonSchema)]
 pub(crate) struct SchoolWithVersions {
     #[serde(flatten)]
     pub(crate) school: School,

@@ -1,4 +1,4 @@
-use crate::entities::{OptivumTimetableVersion, School};
+use crate::entities::{OptivumTimetableVersion, School, TilesInfo};
 use crate::error;
 use crate::error::ApiError;
 use sqlx::postgres::PgPoolOptions;
@@ -53,6 +53,20 @@ impl Db {
             tile_long,
         )
             .fetch_all(&self.pool)
+            .await
+    }
+
+    pub(crate) async fn get_tiles_0_5_info(&self) -> sqlx::Result<TilesInfo> {
+        sqlx::query_as!(
+            TilesInfo,
+            r#"SELECT
+                COALESCE(MIN("tile_0_5_lat"), 0) AS "min_lat_tile!",
+                COALESCE(MAX("tile_0_5_lat"), 0) AS "max_lat_tile!",
+                COALESCE(MIN("tile_0_5_long"), 0) AS "min_long_tile!",
+                COALESCE(MAX("tile_0_5_long"), 0) AS "max_long_tile!"
+                FROM "schools""#,
+        )
+            .fetch_one(&self.pool)
             .await
     }
 
