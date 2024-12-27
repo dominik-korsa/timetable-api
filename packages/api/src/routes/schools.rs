@@ -54,10 +54,13 @@ async fn list_schools(
 
 #[derive(Deserialize, JsonSchema)]
 struct TilesParams {
+    /// Filters schools where `FLOOR(school.geo_lat / 0.5) == tile_lat`
     tile_lat: i16,
+    /// Filters schools where `FLOOR(school.geo_long / 0.5) == tile_long`
     tile_long: i16,
 }
 
+/// List schools in a particular 0.5°x0.5 map tile.
 async fn list_tiles_0_5(
     State(db): State<Db>,
     Path(params): Path<TilesParams>,
@@ -74,7 +77,6 @@ async fn get_tiles_0_5_info(
     let info = db.get_tiles_0_5_info().await?;
     Ok::<_, ApiError>(Json(info))
 }
-
 
 #[derive(Deserialize, JsonSchema)]
 struct SchoolParams {
