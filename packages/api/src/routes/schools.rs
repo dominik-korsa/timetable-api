@@ -17,6 +17,7 @@ use tokio::try_join;
 pub(crate) fn create_schools_router() -> ApiRouter<Db> {
     ApiRouter::new()
         .api_route("/v1/schools", get(list_schools))
+        .api_route("/v1/tiles/0.5/:tile_lat/:tile_long/schools", get(list_tiles_0_5))
         .api_route("/v1/schools/:rspo_id", get(get_school))
         .api_route(
             "/v1/optivum-versions/:id",
@@ -46,6 +47,22 @@ async fn list_schools(
     }
     let schools = db.get_schools_by_teryt(&params.teryt).await?;
     Ok(Json(SchoolListResponse {
+        schools
+    }))
+}
+
+#[derive(Deserialize, JsonSchema)]
+struct TilesParams {
+    tile_lat: i16,
+    tile_long: i16,
+}
+
+async fn list_tiles_0_5(
+    State(db): State<Db>,
+    Path(params): Path<TilesParams>,
+) -> impl IntoApiResponse {
+    let schools = db.get_tiles_0_5(params.tile_lat, params.tile_long).await?;
+    Ok::<_, ApiError>(Json(SchoolListResponse {
         schools
     }))
 }

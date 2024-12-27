@@ -36,6 +36,26 @@ impl Db {
         .await
     }
 
+    pub(crate) async fn get_tiles_0_5(&self, tile_lat: i16, tile_long: i16) -> sqlx::Result<Vec<School>> {
+        sqlx::query_as!(
+            School,
+            r#"SELECT
+                "name", "rspo_id", "commune_teryt" as "teryt", "geo_lat", "geo_long", "parent_rspo_id", "website_url",
+                "corresp_addr_street" as "address_street",
+                "corresp_addr_building_nr" as "address_building_number",
+                "corresp_addr_apartament_nr" as "address_apartament_number",
+                "corresp_addr_zip_code" as "address_zip_code",
+                "corresp_addr_town" as "address_town"
+                FROM "schools"
+                WHERE "tile_0_5_lat" = $1 AND "tile_0_5_long" = $2
+                ORDER BY "rspo_id""#,
+            tile_lat,
+            tile_long,
+        )
+            .fetch_all(&self.pool)
+            .await
+    }
+
     pub(crate) async fn get_school_by_rspo_id(&self, rspo_id: i32) -> sqlx::Result<Option<School>> {
         sqlx::query_as!(
             School,
