@@ -130,14 +130,14 @@ export class Timetable {
         let generatedDate: string | null = null;
         let validFrom: string | null = null;
         const unitFullNames = new Map<string, string>();
-        let classShorts = new Map<string, string>();
-        let teacherShorts = new Map<string, string>();
-        let roomShorts = new Map<string, string>();
+        const classShorts = new Map<string, string>();
+        const teacherShorts = new Map<string, string>();
+        const roomShorts = new Map<string, string>();
         let days: Day[] = [];
         let timeSlots: TimeSlot[] = [];
-        let subjects = new Set<string>();
+        const subjects = new Set<string>();
         const interclassGroups = new Map<string, string[]>();
-        let commonGroups = new Map<string, CommonGroup>();
+        const commonGroups = new Map<string, CommonGroup>();
         const lessons = new DefaultsMap<string, ClientLesson[]>(() => []);
 
         unitHTMLs.forEach((unit) => {
@@ -159,7 +159,7 @@ export class Timetable {
             parsedTable.teacherShorts.forEach((short, id) => teacherShorts.set(id, short));
             parsedTable.roomShorts.forEach((short, id) => roomShorts.set(id, short));
             parsedTable.groups.forEach((value, id) => commonGroups.set(id, value));
-            
+
             parsedTable.interclassGroupIds.forEach((id) => {
                 const existingInterclassGroup = interclassGroups.get(id);
                 if (existingInterclassGroup) existingInterclassGroup.push(unit.id);
@@ -208,8 +208,8 @@ export class Timetable {
                 return lesson.interclassGroupId === existingLesson.interclassGroupId;
             // Interclass groups: teacher tables
             if (unit.type !== UnitType.CLASS)
-                return [...existingLesson.classIds.values()].find((classId) => lesson.classIds.has(classId));
-            
+                return [...existingLesson.classIds.values()].some((classId) => lesson.classIds.has(classId));
+
             return false;
         };
         const existingLesson = timeSlotLessons.find(isMatchingLesson);
