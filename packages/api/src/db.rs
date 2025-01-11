@@ -1,4 +1,4 @@
-use crate::entities::{OptivumTimetableVersion, School, TilesInfo};
+use crate::entities::{ClusterMarker, OptivumTimetableVersion, School, TilesInfo};
 use crate::error;
 use crate::error::ApiError;
 use sqlx::postgres::PgPoolOptions;
@@ -67,6 +67,20 @@ impl Db {
                 FROM "schools""#,
         )
             .fetch_one(&self.pool)
+            .await
+    }
+
+    pub(crate) async fn get_commune_markers(&self) -> sqlx::Result<Vec<ClusterMarker>> {
+        sqlx::query_as!(
+            ClusterMarker,
+            r#"SELECT
+                count AS "count!",
+                geo_long AS "geo_long!",
+                geo_lat AS "geo_lat!"
+                FROM "commune_markers"
+                WHERE count IS NOT NULL AND geo_long IS NOT NULL AND geo_lat IS NOT NULL"#,
+        )
+            .fetch_all(&self.pool)
             .await
     }
 

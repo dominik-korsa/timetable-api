@@ -1,5 +1,5 @@
 use crate::db::Db;
-use crate::entities::{SchoolListResponse, SchoolWithVersions};
+use crate::entities::{ClusterMarkersResponse, SchoolListResponse, SchoolWithVersions};
 use crate::error::ApiError;
 use aide::axum::routing::{get, post};
 use aide::axum::{ApiRouter, IntoApiResponse};
@@ -19,6 +19,7 @@ pub(crate) fn create_schools_router() -> ApiRouter<Db> {
         .api_route("/v1/schools", get(list_schools))
         .api_route("/v1/tiles/0.5/:tile_lat/:tile_long/schools", get(list_tiles_0_5))
         .api_route("/v1/tiles/0.5/info", get(get_tiles_0_5_info))
+        .api_route("/v1/cluster-markers/commune", get(get_commune_markers))
         .api_route("/v1/schools/:rspo_id", get(get_school))
         .api_route(
             "/v1/optivum-versions/:id",
@@ -76,6 +77,15 @@ async fn get_tiles_0_5_info(
 ) -> impl IntoApiResponse {
     let info = db.get_tiles_0_5_info().await?;
     Ok::<_, ApiError>(Json(info))
+}
+
+async fn get_commune_markers(
+    State(db): State<Db>,
+) -> impl IntoApiResponse {
+    let markers = db.get_commune_markers().await?;
+    Ok::<_, ApiError>(Json(ClusterMarkersResponse {
+        markers
+    }))
 }
 
 #[derive(Deserialize, JsonSchema)]
