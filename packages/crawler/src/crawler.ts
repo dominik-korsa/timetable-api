@@ -25,7 +25,7 @@ type CheckPageResult = {
     links: string[];
 };
 
-const PAGE_COUNT_LIMIT = 50;
+const PAGE_COUNT_LIMIT = 30;
 
 export default async function crawlWebsite(rspoId: number, startUrl: string) {
     const checked = new Set<string>();
