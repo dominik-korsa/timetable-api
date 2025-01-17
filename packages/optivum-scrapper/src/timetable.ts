@@ -143,6 +143,17 @@ export class Timetable {
         unitHTMLs.forEach((unit) => {
             const table = new Table(unit.html, unit.id, unit.type);
 
+            switch (unit.type) {
+                case UnitType.CLASS:
+                    if (!classShorts.has(unit.id)) classShorts.set(unit.id, table.getTitle());
+                    break;
+                case UnitType.TEACHER:
+                    if (!teacherShorts.has(unit.id)) teacherShorts.set(unit.id, table.getTitle());
+                    break;
+                case UnitType.ROOM:
+                    if (!roomShorts.has(unit.id)) roomShorts.set(unit.id, table.getTitle());
+                    break;
+            }
             unitFullNames.set(unit.type + unit.id, table.getTitle());
 
             if (generatedDate === null) {
