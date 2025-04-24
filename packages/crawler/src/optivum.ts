@@ -2,6 +2,7 @@ import { CheerioAPI } from 'cheerio';
 import { Timetable } from '@timetable-api/optivum-scrapper';
 import axios from 'axios';
 import { pushOptivumCandidate } from './db.js';
+import https from 'https';
 
 export function isOptivumCandidate($: CheerioAPI) {
     const description = $('meta[name="description"]').attr('content');
@@ -13,7 +14,14 @@ export function isOptivumCandidate($: CheerioAPI) {
 }
 
 export function checkOptivumCandidate(url: string, rspoId: number) {
-    const timetable = new Timetable(url, axios.create());
+    const timetable = new Timetable(
+        url,
+        axios.create({
+            httpsAgent: new https.Agent({
+                rejectUnauthorized: false,
+            }),
+        }),
+    );
     return timetable.getUnitList().then(async ({ sources, units }) => {
         if (!units.length) {
             console.warn(`\x1b[103m[RSPO: ${rspoId.toString()}] Empty optivum cantidate list, url: ${url}\x1b[0m`)

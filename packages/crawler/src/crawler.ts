@@ -6,8 +6,14 @@ import { getEdupageInstance } from './edupage.js';
 import { areUrlsEqualIgnoringQuery } from './utils.js';
 import { pushEdupageInstances } from './db.js';
 import { ClientRequest } from 'node:http';
+import https from 'https';
 
-const axiosInstance = axios.create();
+const axiosInstance = axios.create({
+    httpsAgent: new https.Agent({
+        rejectUnauthorized: false,
+    }),
+});
+
 axiosRetry(axiosInstance, { retries: 3, retryDelay: (retryCount) => retryCount * 3000 });
 
 interface QueueItem {

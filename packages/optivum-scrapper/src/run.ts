@@ -11,10 +11,15 @@ import axios from 'axios';
 import axiosRetry from 'axios-retry';
 import { Unit } from './types.js';
 import { Timetable } from './timetable.js';
+import https from 'https';
 
 const PARALEL_CANDIDATE_LIMIT = 30;
 
-const axiosInstance = axios.create();
+const axiosInstance = axios.create({
+    httpsAgent: new https.Agent({
+        rejectUnauthorized: false,
+    }),
+});
 axiosRetry(axiosInstance);
 
 async function main() {
