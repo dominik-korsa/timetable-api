@@ -37,7 +37,9 @@ async fn default_headers_middleware(
     let mut response = next.run(request).await;
     let headers = response.headers_mut();
     headers.insert(X_CONTENT_TYPE_OPTIONS, HeaderValue::from_static("nosniff"));
-    headers.insert(CACHE_CONTROL, HeaderValue::from_static("no-cache"));
+    if !headers.contains_key(CACHE_CONTROL) {
+        headers.insert(CACHE_CONTROL, HeaderValue::from_static("no-cache"));
+    }
     response
 }
 

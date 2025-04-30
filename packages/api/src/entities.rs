@@ -18,6 +18,21 @@ pub(crate) struct School {
 }
 
 #[derive(Serialize, JsonSchema)]
+pub(crate) struct TilesInfo {
+    pub(crate) min_lat_tile: i32,
+    pub(crate) max_lat_tile: i32,
+    pub(crate) min_long_tile: i32,
+    pub(crate) max_long_tile: i32,
+}
+
+#[derive(Serialize, JsonSchema)]
+pub(crate) struct ClusterMarker {
+    pub(crate) count: i64,
+    pub(crate) geo_lat: f64,
+    pub(crate) geo_long: f64,
+}
+
+#[derive(Serialize, JsonSchema)]
 pub(crate) struct SchoolWithVersions {
     #[serde(flatten)]
     pub(crate) school: School,
@@ -34,4 +49,9 @@ pub(crate) struct OptivumTimetableVersion {
 #[derive(Serialize, JsonSchema)]
 pub(crate) struct SchoolListResponse {
     pub(crate) schools: Vec<School>
+}
+
+#[derive(Serialize, JsonSchema)]
+pub(crate) struct ClusterMarkersResponse {
+    pub(crate) markers: Vec<ClusterMarker>
 }
