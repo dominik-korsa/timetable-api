@@ -191,7 +191,13 @@ export class Timetable {
     private static handleLesson(unit: Unit, lesson: LessonTimeSlot, lessons: DefaultsMap<string, ClientLesson[]>) {
         const timeSlotLessons = lessons.get(`${lesson.dayIndex.toString()}|${lesson.timeSlotIndex.toString()}`);
 
-        if (lesson.type === 'comment') return timeSlotLessons.push({ type: 'comment', comment: lesson.comment });
+        if (lesson.type === 'comment') return timeSlotLessons.push({
+            type: 'comment',
+            comment: lesson.comment,
+            classIds: unit.type === UnitType.CLASS ? new Set([unit.id]) : new Set(),
+            teacherId: unit.type === UnitType.TEACHER ? unit.id : null,
+            roomId: unit.type === UnitType.ROOM ? unit.id : null,
+        });
 
         const isMatchingLesson = (existingLesson: ClientLesson): boolean => {
             // Comment

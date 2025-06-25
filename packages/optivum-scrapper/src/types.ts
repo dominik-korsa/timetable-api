@@ -58,6 +58,9 @@ export type ClientLesson =
     | {
           type: 'comment';
           comment: string;
+          classIds: Set<string>;
+          teacherId: string | null;
+          roomId: string | null;
       }
     | {
           type: 'default';
