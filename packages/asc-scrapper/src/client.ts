@@ -140,6 +140,7 @@ export class Client {
             else lessonsCards.set(card.lessonid, [card]);
         });
         return {
+            schemaVersion: "1",
             common: {
                 timeSlots: periodsTableRow.map(mapPeriodsTableRow),
                 days: daysTableRows.map(mapDaysTableRow),

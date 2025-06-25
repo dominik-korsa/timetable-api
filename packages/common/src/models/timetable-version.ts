@@ -100,6 +100,7 @@ export interface TimetableLesson {
 }
 
 export interface TimetableVersionData {
+    schemaVersion: string;
     common: {
         timeSlots: TimetableTimeSlot[];
         days: TimetableDay[];

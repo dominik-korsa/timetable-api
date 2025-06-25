@@ -97,6 +97,7 @@ export const formatResult = (
     validFrom: string | null,
 ): ParseResult => ({
     data: {
+        schemaVersion: "1",
         common: {
             days: days.map(mapDay),
             timeSlots: timeSlots.map(mapTimeSlot),
