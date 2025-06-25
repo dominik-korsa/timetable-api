@@ -1,6 +1,7 @@
 import { TimetableClass, TimetableTeacher, TimetableRoom } from '@timetable-api/common';
 import { ClientLesson, CommonGroup, Day, ParseResult, TimeSlot, UnitType } from './types.js';
 import { DefaultsMap, getUnitName } from './utils.js';
+import { DATA_SCHEMA_VERSION } from './index.js';
 
 const mapDay = ({ name, isoNumber }: Day) => ({ short: null, name, isoNumber });
 
@@ -97,7 +98,7 @@ export const formatResult = (
     validFrom: string | null,
 ): ParseResult => ({
     data: {
-        schemaVersion: "1",
+        schemaVersion: DATA_SCHEMA_VERSION,
         common: {
             days: days.map(mapDay),
             timeSlots: timeSlots.map(mapTimeSlot),

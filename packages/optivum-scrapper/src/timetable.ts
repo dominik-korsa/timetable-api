@@ -6,6 +6,7 @@ import { isDefined } from '@timetable-api/common';
 import { Table } from './table.js';
 import { createHash } from 'crypto';
 import { formatResult } from './format.js';
+import { DATA_SCHEMA_VERSION } from './index.js';
 
 export class Timetable {
     private baseUrl: string;
@@ -121,7 +122,7 @@ export class Timetable {
     async getHash() {
         const unitHTMLs = await this.getUnitHTMLs();
         return createHash('sha512')
-            .update(JSON.stringify([...unitHTMLs.values()].sort()))
+            .update(JSON.stringify([...unitHTMLs.values()].sort()) + DATA_SCHEMA_VERSION)
             .digest('hex');
     }
 
