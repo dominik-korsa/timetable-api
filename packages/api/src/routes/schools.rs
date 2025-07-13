@@ -1,10 +1,10 @@
 use crate::db::Db;
-use crate::entities::{SchoolListResponse, SchoolWithVersions};
+use crate::entities::{ClusterMarkersResponse, SchoolListResponse, SchoolWithVersions};
 use crate::error::ApiError;
 use aide::axum::routing::{get, post};
 use aide::axum::{ApiRouter, IntoApiResponse};
 use axum::extract::{ConnectInfo, Path, Query, State};
-use axum::http::StatusCode;
+use axum::http::{HeaderValue, StatusCode};
 use axum_jsonschema::Json;
 use email_address::EmailAddress;
 use regex_macro::regex;
@@ -12,11 +12,15 @@ use schemars::JsonSchema;
 use serde::Deserialize;
 use serde_json::value::RawValue;
 use std::net::SocketAddr;
+use axum::http::header::CACHE_CONTROL;
 use tokio::try_join;
 
 pub(crate) fn create_schools_router() -> ApiRouter<Db> {
     ApiRouter::new()
         .api_route("/v1/schools", get(list_schools))
+        .api_route("/v1/tiles/0.5/:tile_lat/:tile_long/schools", get(list_tiles_0_5))
+        .api_route("/v1/tiles/0.5/info", get(get_tiles_0_5_info))
+        .api_route("/v1/cluster-markers/commune", get(get_commune_markers))
         .api_route("/v1/schools/:rspo_id", get(get_school))
         .api_route(
             "/v1/optivum-versions/:id",
@@ -48,6 +52,49 @@ async fn list_schools(
     Ok(Json(SchoolListResponse {
         schools
     }))
+}
+
+#[derive(Deserialize, JsonSchema)]
+struct TilesParams {
+    /// Filters schools where `FLOOR(school.geo_lat / 0.5) == tile_lat`
+    tile_lat: i16,
+    /// Filters schools where `FLOOR(school.geo_long / 0.5) == tile_long`
+    tile_long: i16,
+}
+
+/// List schools in a particular 0.5°x0.5 map tile.
+async fn list_tiles_0_5(
+    State(db): State<Db>,
+    Path(params): Path<TilesParams>,
+) -> impl IntoApiResponse {
+    let schools = db.get_tiles_0_5(params.tile_lat, params.tile_long).await?;
+    let response = SchoolListResponse {
+        schools
+    };
+    Ok::<_, ApiError>(([
+        (CACHE_CONTROL, HeaderValue::from_static("public, max-age=3600"))
+    ], Json(response)))
+}
+
+async fn get_tiles_0_5_info(
+    State(db): State<Db>,
+) -> impl IntoApiResponse {
+    let info = db.get_tiles_0_5_info().await?;
+    Ok::<_, ApiError>(([
+        (CACHE_CONTROL, HeaderValue::from_static("public, max-age=14400"))
+    ], Json(info)))
+}
+
+async fn get_commune_markers(
+    State(db): State<Db>,
+) -> impl IntoApiResponse {
+    let markers = db.get_commune_markers().await?;
+    let response = ClusterMarkersResponse {
+        markers
+    };
+    Ok::<_, ApiError>(([
+        (CACHE_CONTROL, HeaderValue::from_static("public, max-age=14400"))
+    ], Json(response)))
 }
 
 #[derive(Deserialize, JsonSchema)]
