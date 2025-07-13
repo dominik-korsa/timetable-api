@@ -20,7 +20,7 @@ use std::env;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use axum::extract::Request;
-use axum::http::header::{CACHE_CONTROL, X_CONTENT_TYPE_OPTIONS};
+use axum::http::header::{CACHE_CONTROL, CONTENT_ENCODING, CONTENT_TYPE, X_CONTENT_TYPE_OPTIONS};
 use axum::http::HeaderValue;
 use axum::middleware::Next;
 use tower::ServiceBuilder;
@@ -59,7 +59,8 @@ async fn main() {
     let mut api = OpenApi::default();
 
     let cors = CorsLayer::new()
-        .allow_origin(Any);
+        .allow_origin(Any)
+        .allow_headers([CONTENT_TYPE, CONTENT_ENCODING]);
     let headers_layer = ServiceBuilder::new()
         .layer(cors)
         .layer(axum::middleware::from_fn(default_headers_middleware));
