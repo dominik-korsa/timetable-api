@@ -1,24 +1,28 @@
 import crawlWebsite from './crawler.js';
 import { getSchoolWebsites } from './db.js';
 import { asyncForEachWithLimit, ParalelLimit } from '@timetable-api/common';
+import log from './log.js';
 
-const PARALEL_WEBSITE_LIMIT = 30;
+const PARALEL_WEBSITE_LIMIT = 750;
 
 async function main() {
     console.log('Downloading school websites list from database...');
     const websites = await getSchoolWebsites();
+    const websitesCount = websites.length;
 
     console.log('Crawling websites...');
+    let counter = 0;
     await asyncForEachWithLimit(
         websites,
         async ({ rspo_id, website_url }) =>
             crawlWebsite(rspo_id, website_url)
                 .then(({ checked }) => {
-                    console.log(`[RSPO: ${rspo_id.toString()}] Done! Checked ${checked.toString()} pages.`); //TODO: Progress bar
+                    counter++;
+                    log.crawledWebsite(rspo_id, checked, counter, websitesCount);
                 })
-                // eslint-disable-next-line @typescript-eslint/use-unknown-in-catch-callback-variable
-                .catch((error: Error) => {
-                    console.warn(`\x1b[33m[RSPO: ${rspo_id.toString()}] Error message: ${error.message}\x1b[0m`);
+                .catch((error: unknown) => {
+                    counter++;
+                    log.crawlingError(rspo_id, error instanceof Error ? error.message : null);
                 }),
         new ParalelLimit(PARALEL_WEBSITE_LIMIT),
     );

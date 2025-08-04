@@ -11,12 +11,18 @@ const client = knex({
     version: '7.2',
     connection: process.env.DATABASE_URL,
     useNullAsDefault: true,
+    pool: {
+        min: 2,
+        max: 10,
+        idleTimeoutMillis: 15000,
+        acquireTimeoutMillis: 30000,
+    },
 });
 
 export function getSchoolWebsites() {
     return client<{ rspo_id: number; website_url: string }>('schools')
-        .select('rspo_id')
-        .select('website_url')
+        .select(['rspo_id', 'website_url'])
+        .orderBy('rspo_id')
         .whereNotNull('website_url');
 }
 
