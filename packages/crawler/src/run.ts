@@ -21,6 +21,7 @@ async function main() {
                     log.crawledWebsite(rspo_id, checked, counter, websitesCount);
                 })
                 .catch((error: unknown) => {
+                    counter++;
                     log.crawlingError(rspo_id, error instanceof Error ? error.message : null);
                 }),
         new ParalelLimit(PARALEL_WEBSITE_LIMIT),
